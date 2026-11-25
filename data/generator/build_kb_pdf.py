@@ -1,4 +1,4 @@
-"""Converte la knowledge base da Markdown a PDF (data/kb/wayfare_media_handbook.pdf).
+"""Esporta l'handbook da Markdown (data/kb, la versione indicizzata) a PDF (docs/wayfare_media_handbook.pdf).
 
 Il PDF è già incluso nel repository: questo script serve solo se si modifica il Markdown.
 Uso:
@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 KB_DIR = Path(__file__).resolve().parents[1] / "kb"
 SRC = KB_DIR / "wayfare_media_handbook.md"
-OUT = KB_DIR / "wayfare_media_handbook.pdf"
+OUT = KB_DIR.parents[1] / "docs" / "wayfare_media_handbook.pdf"
 
 CSS = """
 @page { size: A4; margin: 22mm 20mm 20mm 20mm; }

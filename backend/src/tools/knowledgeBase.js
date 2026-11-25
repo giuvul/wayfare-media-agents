@@ -10,7 +10,10 @@ export function formatPassages(hits) {
     return "Nessun passaggio pertinente trovato nella documentazione aziendale. Non rispondere con conoscenze generiche: dillo all'utente.";
   }
   return hits
-    .map((h, i) => `[Fonte ${i + 1}] §${h.section} ${h.sectionTitle} (p. ${h.page})\n${h.text.split("\n").slice(1).join("\n")}`)
+    .map((h, i) => {
+      const where = `${h.docTitle} · §${h.section} ${h.sectionTitle}${h.page ? ` (p. ${h.page})` : ""}`;
+      return `[Fonte ${i + 1}] ${where} — cita come [§${h.section}]\n${h.text.split("\n").slice(1).join("\n")}`;
+    })
     .join("\n\n");
 }
 
@@ -18,15 +21,15 @@ export function createKnowledgeBaseTool(retriever) {
   return tool(
     async ({ query }) => {
       const hits = await retriever.search(query);
-      const sources = hits.map(({ section, sectionTitle, page, similarity, text }) => ({
-        section, sectionTitle, page, similarity, excerpt: text.split("\n").slice(1).join(" ").slice(0, 400),
+      const sources = hits.map(({ source, docTitle, section, sectionTitle, page, similarity, text }) => ({
+        source, docTitle, section, sectionTitle, page, similarity, excerpt: text.split("\n").slice(1).join(" ").slice(0, 400),
       }));
       return [formatPassages(hits), { query, sources }];
     },
     {
       name: KB_TOOL_NAME,
       description:
-        "Cerca nell'handbook aziendale di Wayfare Media: regole e policy (listino CPM, sconti, condizioni di vendita, " +
+        "Cerca nella documentazione aziendale di Wayfare Media (handbook e altri documenti della knowledge base): regole e policy (listino CPM, sconti, condizioni di vendita, " +
         "cancellazioni, garanzia di erogazione e make-good, specifiche dei formati, policy sui contenuti, privacy, " +
         "metodologia di misurazione, definizioni dei KPI, segmenti di audience, procedure, FAQ). " +
         "Usalo per domande su COME funziona qualcosa o QUALI regole valgono, e per recuperare le regole da applicare ai dati.",

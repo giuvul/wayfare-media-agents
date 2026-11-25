@@ -17,7 +17,7 @@ concessionaria pubblicitaria digitale di otto aeroporti italiani (FCO, MXP, LIN,
 Aiuti account manager e responsabili commerciali. Rispondi sempre in italiano, in modo chiaro e professionale.
 
 Hai due strumenti e decidi tu quale usare:
-- ${KB_TOOL_NAME}: l'handbook aziendale (regole, policy, condizioni, procedure, definizioni, metodologia).
+- ${KB_TOOL_NAME}: la documentazione aziendale (handbook: regole, policy, condizioni, procedure, definizioni, metodologia).
 - ${DATA_TOOL_NAME}: un analista dati che lavora sul dataset delle campagne (gen 2025 - set 2026) e produce numeri e grafici.
 
 Come decidere:
@@ -36,9 +36,11 @@ Regole:
   (es. "e per Malpensa?" diventa la richiesta precedente ripetuta per l'aeroporto MXP) e indica metrica, filtri e periodo.
   L'analista non ricorda le richieste precedenti: ogni compito deve contenere tutto ciò che serve.
 - Non calcolare mai numeri da solo: riporta quelli restituiti da ${DATA_TOOL_NAME}.
-- Basa le risposte sulle regole aziendali SOLO su ciò che restituisce ${KB_TOOL_NAME} e cita le fonti come [§4.3, p. 5].
+- Basa le risposte sulle regole aziendali SOLO su ciò che restituisce ${KB_TOOL_NAME} e cita le sezioni usate
+  subito dopo l'affermazione, nel formato [§4.3] (più sezioni: [§5.2; §5.3]).
   Se la documentazione non contiene la risposta, dillo chiaramente: non usare conoscenze generiche.
 - Grafici, tabelle e codice dell'analisi sono già mostrati all'utente sotto la tua risposta: non ripeterli e non inserire link.
+- Prima di usare uno strumento puoi scrivere una frase breve su cosa stai per fare: l'utente la vede come ragionamento.
 - Risposte concise: prima la risposta diretta, poi il contesto utile. Usa elenchi solo se aiutano.`;
 
 /**
@@ -64,8 +66,27 @@ export function createOrchestrator({ model, tools, maxModelCalls, checkpointer =
 }
 
 /**
+ * Restituisce l'agente per le impostazioni correnti (modello e chiave scelti dall'utente).
+ * L'agente viene ricreato solo quando le impostazioni cambiano; la memoria (checkpointer) è condivisa.
+ */
+export function createAgentProvider({ settings, buildModel, tools, maxModelCalls, checkpointer }) {
+  let cached = { version: -1, agent: null };
+  return () => {
+    if (cached.version !== settings.version) {
+      const { model, apiKey } = settings.get();
+      cached = { version: settings.version, agent: createOrchestrator({ model: buildModel({ model, apiKey }), tools, maxModelCalls, checkpointer }).agent };
+    }
+    return cached.agent;
+  };
+}
+
+const textOf = (msg) =>
+  (typeof msg.content === "string" ? msg.content : msg.content.map((p) => p.text ?? "").join("")).trim();
+
+/**
  * Esegue un turno di conversazione ed emette eventi per l'interfaccia:
- *  tool_start {id, tool, args} · tool_end {id, tool, ok, durationMs, artifact} · token {text} · final {answer, steps}
+ *  tool_start {id, tool, args, thought} · tool_end {id, tool, ok, durationMs, artifact} · token {text} · final {answer, steps}
+ * `thought` è il testo che il modello scrive prima di chiamare lo strumento (il suo ragionamento visibile).
  */
 export async function runTurn({ agent, checkpointer, sessionId, message, signal, onEvent = () => {} }) {
   const steps = [];
@@ -96,9 +117,10 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
           seen.add(msg.id);
         }
         if (AIMessage.isInstance(msg) && msg.tool_calls?.length) {
-          for (const call of msg.tool_calls) {
+          const thought = textOf(msg);
+          for (const [k, call] of msg.tool_calls.entries()) {
             started.set(call.id, Date.now());
-            const step = { id: call.id, tool: call.name, args: call.args };
+            const step = { id: call.id, tool: call.name, args: call.args, thought: k === 0 && thought ? thought : null };
             steps.push(step);
             onEvent("tool_start", step);
           }
@@ -111,7 +133,7 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
           });
           onEvent("tool_end", step);
         } else if (AIMessage.isInstance(msg) && !msg.tool_calls?.length) {
-          answer = typeof msg.content === "string" ? msg.content : msg.content.map((p) => p.text ?? "").join("");
+          answer = textOf(msg);
         }
       }
     }

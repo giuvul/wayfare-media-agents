@@ -38,10 +38,10 @@ export default function AnalysisCard({ artifact }) {
   const tabs = [
     charts.length > 0 && { key: "chart", label: charts.length > 1 ? `Grafici (${charts.length})` : "Grafico" },
     artifact.table?.rows?.length > 0 && { key: "data", label: "Dati" },
-    artifact.code?.length > 0 && { key: "code", label: "Codice" },
   ].filter(Boolean);
+  if (tabs.length && artifact.code?.length) tabs.push({ key: "code", label: "Codice" });
   const [active, setActive] = useState(tabs[0]?.key);
-  if (tabs.length === 0) return null;
+  if (tabs.length === 0) return null; // solo codice: resta nel pannello del ragionamento
 
   return (
     <section className="card" aria-label="Risultato dell'analisi">

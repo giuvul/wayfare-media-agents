@@ -67,14 +67,73 @@ export async function buildChunks(sections, { docTitle, chunkSize = 900, chunkOv
   const splitter = new RecursiveCharacterTextSplitter({ chunkSize, chunkOverlap });
   const chunks = [];
   for (const section of sections) {
+    if (!section.text) continue;
     const parts = await splitter.splitText(section.text);
     parts.forEach((part, j) => {
       const label = section.id === "0" ? section.title : `${section.id} ${section.title}`;
-      chunks.push({
-        text: `${docTitle} › ${label}\n${part}`,
-        metadata: { section_id: section.id, section_title: section.title, page: section.page, part: j },
-      });
+      const metadata = { section_id: section.id, section_title: section.title, part: j };
+      if (section.page) metadata.page = section.page; // solo per i PDF
+      chunks.push({ text: `${docTitle} › ${label}\n${part}`, metadata });
     });
   }
   return chunks;
+}
+
+// --- Documenti Markdown / testo -------------------------------------------------------------
+
+/** Separa il front matter YAML semplice (chiave: "valore") dal corpo del documento. */
+export function parseFrontMatter(text) {
+  const normalized = text.normalize("NFKC").replace(/\r\n/g, "\n");
+  const m = /^---\n([\s\S]*?)\n---\n?/.exec(normalized);
+  if (!m) return { meta: {}, body: normalized };
+  const meta = {};
+  for (const line of m[1].split("\n")) {
+    const kv = /^([\w-]+):\s*"?(.*?)"?\s*$/.exec(line);
+    if (kv) meta[kv[1]] = kv[2];
+  }
+  return { meta, body: normalized.slice(m[0].length) };
+}
+
+const MD_HEADING = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
+const NUMBERED = /^(\d+(?:\.\d+)*)\.?\s+(.+)$/;
+
+/**
+ * Sezioni di un documento Markdown, delimitate dai titoli. L'id è la numerazione esplicita del titolo
+ * ("4.3 Cancellazione" -> "4.3") oppure, se manca, una numerazione automatica gerarchica.
+ * `line` è l'indice (da 0) della riga del titolo nel corpo: il visualizzatore la usa per evidenziare.
+ */
+export function splitMarkdownSections(body) {
+  const lines = body.split("\n");
+  const headings = [];
+  let inFence = false;
+  lines.forEach((line, i) => {
+    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    const h = !inFence && MD_HEADING.exec(line);
+    if (h) headings.push({ line: i, depth: h[1].length, raw: h[2] });
+  });
+  const minDepth = Math.min(...headings.map((h) => h.depth));
+  const counters = [];
+  const sections = [];
+  const intro = lines.slice(0, headings[0]?.line ?? lines.length).join("\n").trim();
+  if (intro) sections.push({ id: "0", title: "Introduzione", level: 0, line: 0, text: intro });
+  headings.forEach((h, k) => {
+    const level = h.depth - minDepth + 1;
+    const numbered = NUMBERED.exec(h.raw);
+    let id;
+    let title = h.raw.replace(/[*_`]/g, "");
+    if (numbered) {
+      id = numbered[1];
+      title = numbered[2].replace(/[*_`]/g, "");
+      counters.length = 0;
+      counters.push(...id.split(".").map(Number));
+    } else {
+      counters.length = level;
+      counters[level - 1] = (counters[level - 1] ?? 0) + 1;
+      for (let j = 0; j < level; j++) counters[j] ??= 1;
+      id = counters.slice(0, level).join(".");
+    }
+    const end = headings[k + 1]?.line ?? lines.length;
+    sections.push({ id, title, level, line: h.line, text: lines.slice(h.line + 1, end).join("\n").trim() });
+  });
+  return sections;
 }

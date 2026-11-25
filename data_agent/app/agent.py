@@ -135,7 +135,8 @@ class DataAnalyst:
         )
         self._llm = build_llm(settings)
 
-    def analyze(self, task: str) -> AnalysisResult:
+    def analyze(self, task: str, llm=None) -> AnalysisResult:
+        llm = llm or self._llm
         started = time.monotonic()
         deadline = started + self.settings.request_timeout_s
         result = AnalysisResult(answer="")
@@ -155,7 +156,7 @@ class DataAnalyst:
                 return (out.output or "(nessun output: usa print() o metti un'espressione alla fine)") + note
 
             tool = StructuredTool.from_function(esegui_python, name="esegui_python", description=TOOL_DESCRIPTION)
-            agent = create_agent(model=self._llm, tools=[tool], system_prompt=self._system_prompt)
+            agent = create_agent(model=llm, tools=[tool], system_prompt=self._system_prompt)
             messages: list = []
             exhausted = False
             try:
@@ -186,7 +187,7 @@ class DataAnalyst:
                 if isinstance(history[-1], AIMessage) and history[-1].tool_calls:
                     history.pop()  # tool call senza risposta: l'API la rifiuterebbe
                 try:
-                    final = self._llm.invoke([("system", self._system_prompt), *history,
+                    final = llm.invoke([("system", self._system_prompt), *history,
                                               HumanMessage(FINALIZE_PROMPT)])
                 except Exception as exc:
                     result.error = f"Analisi non riuscita: {type(exc).__name__}: {exc}"[:500]

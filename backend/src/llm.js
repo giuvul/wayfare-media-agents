@@ -3,18 +3,20 @@ import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 
 const HEADERS = { "X-Title": "Wayfare Media Agents" };
 
-export function createChatModel(config) {
+/** @param {{ model?: string, apiKey?: string }} [override] impostazioni scelte dall'utente */
+export function createChatModel(config, { model = config.LLM_MODEL, apiKey = config.OPENROUTER_API_KEY } = {}) {
   const modelKwargs = {
     // instrada solo verso provider che supportano tutti i parametri richiesti (tool calling incluso)
     provider: { require_parameters: true },
   };
-  if (config.LLM_FALLBACK_MODELS.length > 0) {
+  const fallbacks = config.LLM_FALLBACK_MODELS.filter((m) => m !== model);
+  if (fallbacks.length > 0) {
     // fallback lato OpenRouter se il modello principale è saturo o non disponibile
-    modelKwargs.models = [config.LLM_MODEL, ...config.LLM_FALLBACK_MODELS];
+    modelKwargs.models = [model, ...fallbacks];
   }
   return new ChatOpenAI({
-    model: config.LLM_MODEL,
-    apiKey: config.OPENROUTER_API_KEY,
+    model,
+    apiKey,
     configuration: { baseURL: config.OPENROUTER_BASE_URL, defaultHeaders: HEADERS },
     temperature: 0,
     timeout: config.LLM_TIMEOUT_MS,
@@ -23,12 +25,22 @@ export function createChatModel(config) {
   });
 }
 
-export function createEmbeddings(config) {
+export function createEmbeddings(config, apiKey = config.OPENROUTER_API_KEY) {
   return new OpenAIEmbeddings({
     model: config.EMBEDDING_MODEL,
-    apiKey: config.OPENROUTER_API_KEY,
+    apiKey,
     configuration: { baseURL: config.OPENROUTER_BASE_URL, defaultHeaders: HEADERS },
     batchSize: 32,
     maxRetries: 2,
   });
+}
+
+/** Restituisce sempre il client di embedding per la chiave attuale (ricreato solo se la chiave cambia). */
+export function embeddingsProvider(config, getApiKey) {
+  let cached = { key: null, embeddings: null };
+  return () => {
+    const key = getApiKey();
+    if (cached.key !== key) cached = { key, embeddings: createEmbeddings(config, key) };
+    return cached.embeddings;
+  };
 }

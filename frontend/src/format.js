@@ -17,3 +17,37 @@ export const TOOL_LABELS = {
   cerca_documentazione: { label: "Documentazione aziendale", running: "Consulto l'handbook aziendale…", icon: "doc" },
   analizza_dati: { label: "Analisi dei dati", running: "L'analista dati sta lavorando: pulizia, calcoli e grafici…", icon: "chart" },
 };
+
+export function formatDate(iso) {
+  return new Date(iso).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+/** Raggruppa le conversazioni per data di ultimo aggiornamento. */
+export function groupByDay(conversations, now = new Date()) {
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const today = startOfDay(now);
+  const day = 86_400_000;
+  const groups = [
+    { label: "Oggi", items: [] },
+    { label: "Ieri", items: [] },
+    { label: "Ultimi 7 giorni", items: [] },
+    { label: "Precedenti", items: [] },
+  ];
+  for (const c of conversations) {
+    const t = startOfDay(new Date(c.updatedAt));
+    const idx = t >= today ? 0 : t >= today - day ? 1 : t >= today - 7 * day ? 2 : 3;
+    groups[idx].items.push(c);
+  }
+  return groups.filter((g) => g.items.length);
+}
+
+export function formatPrice(perMillion) {
+  if (perMillion == null) return "—";
+  if (perMillion === 0) return "gratis";
+  return `$${perMillion.toLocaleString("it-IT", { maximumFractionDigits: 3 })}`;
+}
+
+export function formatContext(tokens) {
+  if (!tokens) return "—";
+  return tokens >= 1_000_000 ? `${(tokens / 1_000_000).toLocaleString("it-IT", { maximumFractionDigits: 1 })}M` : `${Math.round(tokens / 1000)}K`;
+}

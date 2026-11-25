@@ -19,6 +19,7 @@ __pycache__/
 
 # Runtime data (rigenerabili)
 chroma_data/
+storage/
 data_agent/charts/
 data_agent/cache/
 

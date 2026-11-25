@@ -31,9 +31,11 @@ const schema = z.object({
 
   CHROMA_URL: z.url().default("http://localhost:8000"),
   CHROMA_COLLECTION: z.string().default("wayfare_handbook"),
-  KB_PDF_PATH: z.string().default(path.join(REPO_DIR, "data", "kb", "wayfare_media_handbook.pdf")),
+  KB_DIR: z.string().default(path.join(REPO_DIR, "data", "kb")),
   RAG_TOP_K: z.coerce.number().int().min(1).max(10).default(5),
   RAG_MIN_SIMILARITY: z.coerce.number().min(0).max(1).default(0.3),
+
+  STORAGE_DIR: z.string().default(path.join(REPO_DIR, "storage")),
 
   BACKEND_PORT: z.coerce.number().int().default(3001),
   BACKEND_HOST: z.string().default("127.0.0.1"),

@@ -73,7 +73,7 @@ class CleanedData:
     valid_path: Path  # solo righe valide: base di tutte le analisi
     report: list[str]
     code: str
-    source: str  # "cache" | "generata"
+    source: str  # "cache" | "riusata" (codice già validato, dati cambiati) | "generata" (scritta dall'LLM)
     stats: dict
 
 
@@ -187,26 +187,66 @@ def _message_text(msg) -> str:
     return str(content)
 
 
-def prepare_clean_data(settings: Settings, force: bool = False) -> CleanedData:
+def _run_cleaning(code: str, raw: pd.DataFrame, raw_path: Path, settings: Settings):
+    """Esegue `pulisci` nella sandbox e verifica il risultato. Restituisce (df_pulito, report, problemi)."""
+    with Sandbox({"df_grezzo": raw_path}, settings.charts_dir, exec_timeout_s=60) as box:
+        result = box.run(code + "\n_df_pulito, _report = pulisci(df_grezzo.copy())\n")
+        if not result.ok:
+            return None, [], [f"Errore in esecuzione: {result.error}"]
+        clean, report = box.get_frame("_df_pulito", "_report")
+    if clean is None:
+        return None, [], ["pulisci() non ha restituito un DataFrame"]
+    return clean, [str(r) for r in (report or [])], validate(raw, clean)
+
+
+def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> CleanedData:
+    """Prepara il dataset pulito.
+
+    1. dati e dizionario invariati -> cache (nessun calcolo);
+    2. dati cambiati ma dizionario invariato -> riusa il codice già validato, se supera ancora i controlli;
+    3. altrimenti (o con force=True) l'LLM scrive un nuovo `pulisci`, con fino a N tentativi verificati.
+    """
     cache = settings.cache_dir
     cache.mkdir(parents=True, exist_ok=True)
     settings.charts_dir.mkdir(parents=True, exist_ok=True)
     meta_path = cache / "pulizia.json"
     raw_path, complete_path, valid_path = cache / "df_grezzo.pkl", cache / "df_completo.pkl", cache / "df.pkl"
     key = {"csv_sha256": _sha256(settings.data_csv_path), "dizionario_sha256": _sha256(settings.data_dictionary_path)}
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
 
-    if not force and meta_path.exists() and valid_path.exists():
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        if all(meta.get(k) == v for k, v in key.items()):
-            log.info("pulizia: riuso il codice generato in cache (%s)", meta["created_at"])
-            return CleanedData(raw_path, complete_path, valid_path, meta["report"], meta["code"], "cache", meta["stats"])
+    if not force and valid_path.exists() and all(meta.get(k) == v for k, v in key.items()):
+        log.info("pulizia: riuso il risultato in cache (%s)", meta["created_at"])
+        return CleanedData(raw_path, complete_path, valid_path, meta["report"], meta["code"], "cache", meta["stats"])
 
     raw = pd.read_csv(settings.data_csv_path)
     with open(raw_path, "wb") as fh:
         pickle.dump(raw, fh)
+
+    def save(clean: pd.DataFrame, report: list[str], code: str, attempts: int, source: str, model: str) -> CleanedData:
+        valid = clean[clean["impression_erogate"].notna()].reset_index(drop=True)
+        for path, frame in ((complete_path, clean), (valid_path, valid)):
+            tmp = path.with_suffix(".tmp")
+            with open(tmp, "wb") as fh:
+                pickle.dump(frame, fh)
+            tmp.replace(path)  # scrittura atomica: un'analisi in corso non legge mai un file a metà
+        stats = {"righe_grezze": len(raw), "righe_dopo_deduplica": len(clean), "righe_valide": len(valid),
+                 "tentativi": attempts}
+        new_meta = {**key, "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "model": model, "source": source,
+                    "code": code, "report": report, "stats": stats}
+        meta_path.write_text(json.dumps(new_meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        (cache / "pulizia_generata.py").write_text(code + "\n", encoding="utf-8")
+        return CleanedData(raw_path, complete_path, valid_path, report, code, source, stats)
+
+    if not force and meta.get("code") and meta.get("dizionario_sha256") == key["dizionario_sha256"]:
+        clean, report, problems = _run_cleaning(meta["code"], raw, raw_path, settings)
+        if not problems:
+            log.info("pulizia: dati cambiati, il codice già validato supera ancora i controlli (nessuna chiamata LLM)")
+            return save(clean, report, meta["code"], 0, "riusata", meta.get("model", ""))
+        log.info("pulizia: il codice precedente non supera più i controlli (%d problemi): rigenero", len(problems))
+
+    llm = llm or build_llm(settings)
     profile = build_profile(raw)
     dizionario = settings.data_dictionary_path.read_text(encoding="utf-8")
-    llm = build_llm(settings)
     messages = [
         SystemMessage(CLEANING_SYSTEM_PROMPT),
         HumanMessage(CLEANING_TASK.format(
@@ -219,30 +259,12 @@ def prepare_clean_data(settings: Settings, force: bool = False) -> CleanedData:
         t0 = time.monotonic()
         reply = llm.invoke(messages)
         code = _extract_code(_message_text(reply))
-        with Sandbox({"df_grezzo": raw_path}, settings.charts_dir, exec_timeout_s=60) as box:
-            result = box.run(code + "\n_df_pulito, _report = pulisci(df_grezzo.copy())\n")
-            if not result.ok:
-                problems = [f"Errore in esecuzione: {result.error}"]
-                clean, report = None, []
-            else:
-                clean, report = box.get_frame("_df_pulito", "_report")
-                problems = validate(raw, clean) if clean is not None else ["pulisci() non ha restituito un DataFrame"]
+        clean, report, problems = _run_cleaning(code, raw, raw_path, settings)
         log.info("pulizia tentativo %d: %d problemi (%.1fs)", attempt, len(problems), time.monotonic() - t0)
         for problem in problems:
             log.info("  problema: %s", problem[:300])
         if not problems:
-            valid = clean[clean["impression_erogate"].notna()].reset_index(drop=True)
-            for path, frame in ((complete_path, clean), (valid_path, valid)):
-                with open(path, "wb") as fh:
-                    pickle.dump(frame, fh)
-            stats = {"righe_grezze": len(raw), "righe_dopo_deduplica": len(clean), "righe_valide": len(valid),
-                     "tentativi": attempt}
-            report = [str(r) for r in (report or [])]
-            meta = {**key, "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "model": settings.llm_model,
-                    "code": code, "report": report, "stats": stats}
-            meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-            (cache / "pulizia_generata.py").write_text(code + "\n", encoding="utf-8")
-            return CleanedData(raw_path, complete_path, valid_path, report, code, "generata", stats)
+            return save(clean, report, code, attempt, "generata", getattr(llm, "model_name", settings.llm_model))
         last_problem = "\n".join(f"- {p}" for p in problems)
         messages += [reply, HumanMessage(
             "Il codice non supera i controlli di qualità:\n" + last_problem +

@@ -14,16 +14,17 @@ const dataClient = {
   analyze: async (task) => ({ answer: `Analisi: ${task}`, charts: [{ id: "a".repeat(32) }], table: { columns: [], rows: [] }, steps: [], duration_ms: 10 }),
 };
 const tools = [createKnowledgeBaseTool(retriever), createDataAgentTool(dataClient)];
-const call = (id, name, args) => ({ content: "", tool_calls: [{ id, name, args, type: "tool_call" }] });
+const call = (id, name, args, content = "") => ({ content, tool_calls: [{ id, name, args, type: "tool_call" }] });
 
 test("un turno RAG produce un solo step con le fonti come artifact", async () => {
-  const model = new ScriptedChatModel([call("c1", "cerca_documentazione", { query: "penali cancellazione" }), "Penale del 50% [§4.3, p. 5]."]);
+  const model = new ScriptedChatModel([call("c1", "cerca_documentazione", { query: "penali cancellazione" }, "Cerco la regola."), "Penale del 50% [§4.3, p. 5]."]);
   const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
   const events = [];
   const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "penali?", onEvent: (e) => events.push(e) });
   assert.equal(res.answer, "Penale del 50% [§4.3, p. 5].");
   assert.equal(res.steps.length, 1);
   assert.equal(res.steps[0].artifact.sources[0].section, "4.3");
+  assert.equal(res.steps[0].thought, "Cerco la regola."); // il ragionamento visibile resta nello step
   assert.deepEqual(events.filter((e) => e !== "token"), ["tool_start", "tool_end", "final"]);
 });
 

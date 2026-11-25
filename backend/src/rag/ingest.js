@@ -1,69 +1,104 @@
-// Ingestion della knowledge base in ChromaDB. Idempotente: si può rieseguire senza duplicare nulla.
-//   npm run ingest              indicizza (salta se il PDF non è cambiato)
+// Indicizzazione della knowledge base in ChromaDB. Idempotente: si può rieseguire senza duplicare nulla.
+//   npm run ingest              indicizza tutti i documenti di KB_DIR (salta quelli invariati)
 //   npm run ingest -- --reset   ricrea la collection (es. dopo aver cambiato modello di embedding)
 //
-// È l'UNICO processo che scrive su Chroma: il server della chat legge soltanto.
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { extractText, getDocumentProxy } from "unpdf";
-
+// Una sola scrittura alla volta: dentro il server le operazioni passano da una coda; il comando da terminale
+// va usato per il primo caricamento, prima di avviare il server (in docker compose è un servizio one-shot).
 import { loadConfig } from "../config.js";
-import { createEmbeddings } from "../llm.js";
+import { embeddingsProvider } from "../llm.js";
 import { createLogger } from "../logger.js";
-import { buildChunks, splitIntoSections } from "./chunking.js";
+import { buildChunks } from "./chunking.js";
 import { createChromaClient, getOrCreateKbCollection } from "./chroma.js";
+import { createDocumentStore } from "./documents.js";
 
-const DOC_TITLE = "Handbook Wayfare Media";
-
-export async function readPdfPages(pdfPath) {
-  const buffer = await readFile(pdfPath);
-  const pdf = await getDocumentProxy(new Uint8Array(buffer));
-  const { text } = await extractText(pdf, { mergePages: false });
-  return { pages: text, sha256: createHash("sha256").update(buffer).digest("hex") };
-}
-
-export async function ingest({ config, log, reset = false }) {
-  const source = path.basename(config.KB_PDF_PATH);
+export function createIndexer({ config, getEmbeddings, documents, log }) {
   const client = createChromaClient(config.CHROMA_URL);
-  if (reset) {
-    await client.deleteCollection({ name: config.CHROMA_COLLECTION }).catch(() => {});
-    log.info({ collection: config.CHROMA_COLLECTION }, "collection eliminata");
-  }
-  const collection = await getOrCreateKbCollection(client, config.CHROMA_COLLECTION, config.EMBEDDING_MODEL);
-  if (collection.metadata?.embedding_model && collection.metadata.embedding_model !== config.EMBEDDING_MODEL) {
-    throw new Error("Modello di embedding cambiato: riesegui con --reset per ricreare l'indice.");
+  let queue = Promise.resolve();
+  const serialized = (fn) => {
+    const run = queue.then(fn, fn);
+    queue = run.catch(() => {});
+    return run;
+  };
+
+  async function collection() {
+    const kb = await getOrCreateKbCollection(client, config.CHROMA_COLLECTION, config.EMBEDDING_MODEL);
+    const indexedWith = kb.metadata?.embedding_model;
+    if (indexedWith && indexedWith !== config.EMBEDDING_MODEL) {
+      throw new Error(`La knowledge base è indicizzata con "${indexedWith}": riesegui \`npm run ingest -- --reset\`.`);
+    }
+    return kb;
   }
 
-  const { pages, sha256 } = await readPdfPages(config.KB_PDF_PATH);
-  const existing = await collection.get({ where: { source }, limit: 1, include: ["metadatas"] });
-  if (existing.ids.length && existing.metadatas[0]?.sha256 === sha256) {
-    log.info({ source, chunks: await collection.count() }, "documento invariato: niente da fare");
-    return { skipped: true };
+  async function indexOne(kb, id, force) {
+    const doc = await documents.load(id);
+    const existing = await kb.get({ where: { source: id }, limit: 1, include: ["metadatas"] });
+    if (!force && existing.ids.length && existing.metadatas[0]?.sha256 === doc.sha256) {
+      return { id, skipped: true };
+    }
+    const chunks = await buildChunks(doc.sections, { docTitle: doc.title });
+    const embeddings = chunks.length ? await getEmbeddings().embedDocuments(chunks.map((c) => c.text)) : [];
+    // prima si eliminano i chunk della versione precedente dello stesso documento, poi si inseriscono i nuovi
+    await kb.delete({ where: { source: id } });
+    if (chunks.length) {
+      await kb.add({
+        ids: chunks.map((_, i) => `${id}:${doc.sha256.slice(0, 12)}:${i}`),
+        embeddings,
+        documents: chunks.map((c) => c.text),
+        metadatas: chunks.map((c) => ({ ...c.metadata, source: id, doc_title: doc.title, sha256: doc.sha256 })),
+      });
+    }
+    log.info({ source: id, sections: doc.sections.length, chunks: chunks.length }, "documento indicizzato");
+    return { id, skipped: false, chunks: chunks.length };
   }
 
-  const sections = splitIntoSections(pages);
-  const chunks = await buildChunks(sections, { docTitle: DOC_TITLE });
-  log.info({ source, pages: pages.length, sections: sections.length, chunks: chunks.length }, "documento suddiviso");
-
-  const embeddings = await createEmbeddings(config).embedDocuments(chunks.map((c) => c.text));
-  // Prima elimina i chunk della versione precedente dello stesso documento, poi inserisce i nuovi.
-  await collection.delete({ where: { source } });
-  await collection.add({
-    ids: chunks.map((_, i) => `${source}:${sha256.slice(0, 12)}:${i}`),
-    embeddings,
-    documents: chunks.map((c) => c.text),
-    metadatas: chunks.map((c) => ({ ...c.metadata, source, sha256 })),
-  });
-  log.info({ source, chunks: await collection.count(), dimensions: embeddings[0]?.length }, "indicizzazione completata");
-  return { skipped: false, chunks: chunks.length };
+  return {
+    indexDocument: (id, { force = false } = {}) => serialized(async () => indexOne(await collection(), id, force)),
+    removeDocument: (id) =>
+      serialized(async () => {
+        await (await collection()).delete({ where: { source: id } });
+        log.info({ source: id }, "documento rimosso dall'indice");
+      }),
+    indexAll: ({ reset = false } = {}) =>
+      serialized(async () => {
+        if (reset) {
+          await client.deleteCollection({ name: config.CHROMA_COLLECTION }).catch(() => {});
+          log.info({ collection: config.CHROMA_COLLECTION }, "collection eliminata");
+        }
+        const kb = await collection();
+        const ids = (await documents.list()).map((d) => d.id);
+        const results = [];
+        for (const id of ids) results.push(await indexOne(kb, id, false));
+        // i documenti eliminati dalla cartella escono anche dall'indice
+        const indexed = new Set((await kb.get({ include: ["metadatas"] })).metadatas.map((m) => m?.source));
+        for (const stale of [...indexed].filter((s) => s && !ids.includes(s))) {
+          await kb.delete({ where: { source: stale } });
+          log.info({ source: stale }, "documento non più presente: rimosso dall'indice");
+        }
+        log.info({ documents: ids.length, chunks: await kb.count() }, "indicizzazione completata");
+        return results;
+      }),
+    /** Numero di chunk indicizzati per documento. */
+    async counts() {
+      const kb = await collection();
+      const { metadatas } = await kb.get({ include: ["metadatas"] });
+      const counts = {};
+      for (const m of metadatas) counts[m.source] = (counts[m.source] ?? 0) + 1;
+      return counts;
+    },
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const log = createLogger(config.LOG_LEVEL);
-  ingest({ config, log, reset: process.argv.includes("--reset") }).catch((err) => {
-    log.error({ err: err.message }, "ingestion fallita");
+  const indexer = createIndexer({
+    config,
+    log,
+    getEmbeddings: embeddingsProvider(config, () => config.OPENROUTER_API_KEY),
+    documents: createDocumentStore(config.KB_DIR),
+  });
+  indexer.indexAll({ reset: process.argv.includes("--reset") }).catch((err) => {
+    log.error({ err: err.message }, "indicizzazione fallita");
     process.exit(1);
   });
 }
