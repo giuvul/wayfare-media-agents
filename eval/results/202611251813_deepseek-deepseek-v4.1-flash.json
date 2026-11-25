@@ -6,6 +6,7 @@
     "superati": 19,
     "percorso_corretto": 20,
     "percorso_ottimale": 18,
+    "errori": 0,
     "tempo_mediano_s": 5.344,
     "tempo_p90_s": 28.325,
     "costo_usd": 0.0474
@@ -709,16 +710,6 @@
         },
         {
           "name": "risposta",
-          "ok": true,
-          "detail": ""
-        },
-        {
-          "name": "non contiene WM-2025-0056",
-          "ok": true,
-          "detail": ""
-        },
-        {
-          "name": "non contiene WM-2026-0023",
           "ok": true,
           "detail": ""
         },

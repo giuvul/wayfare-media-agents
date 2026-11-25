@@ -1,0 +1,1130 @@
+{
+  "summary": {
+    "data": "2026-11-25T19:12:09.584Z",
+    "modello": "deepseek/deepseek-v4.1-flash",
+    "casi": 20,
+    "superati": 19,
+    "percorso_corretto": 20,
+    "percorso_ottimale": 18,
+    "errori": 0,
+    "tempo_mediano_s": 4.116,
+    "tempo_p90_s": 25.19,
+    "costo_usd": 0.0303
+  },
+  "results": [
+    {
+      "id": "kb-cancellazione",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §4.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /50\\s?%/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 3361,
+      "turns": [
+        {
+          "message": "Che penale paga un cliente che cancella la campagna 10 giorni prima dell'inizio del flight?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le penali di cancellazione campagna in base al preavviso.",
+              "input": "penale cancellazione campagna 10 giorni prima dell'inizio del flight",
+              "ok": true,
+              "ms": 491,
+              "sources": [
+                "4.3",
+                "5.1",
+                "4.4",
+                "3.2",
+                "12"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Con 10 giorni di preavviso si applica la **penale del 50%** del valore pianificato della campagna (impression pianificate × CPM contrattuale) [§4.3].\n\nIl riferimento è la fascia \"da 7 a 14 giorni prima dell'inizio del flight\", che prevede appunto il 50%; per completezza, le altre fasce sono: nessuna penale oltre 30 giorni, 25% da 15 a 30 giorni, 100% del valore residuo sotto i 7 giorni o a flight già iniziato [§4.3].\n\nNota utile: se il cliente volesse invece modificare date, aeroporti o formati, fino a 15 giorni prima del flight la modifica è gratuita (salvo disponibilità di inventario); dopo quel termine viene trattata come cancellazione parziale più nuova prenotazione [§4.4].",
+          "error": null,
+          "firstTokenMs": 2731,
+          "ms": 3361
+        }
+      ]
+    },
+    {
+      "id": "kb-opzione",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §4.1",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /7 giorni|sette giorni/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2260,
+      "turns": [
+        {
+          "message": "Per quanto tempo posso tenere in opzione una proposta commerciale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le regole sulla durata dell'opzione di una proposta commerciale.",
+              "input": "durata opzione proposta commerciale validità",
+              "ok": true,
+              "ms": 433,
+              "sources": [
+                "4.1",
+                "1.1",
+                "6",
+                "7.3",
+                "11"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Puoi tenere in opzione una proposta commerciale per **7 giorni di calendario**: in questo periodo l'inventario resta bloccato per il cliente e, se non arriva la conferma entro il termine, l'opzione decade automaticamente e l'inventario torna disponibile [§4.1].\n\nLa prenotazione diventa definitiva solo con la firma dell'ordine di inserzione (IO), che riporta flight, aeroporti, formati, impression pianificate, CPM contrattuale e segmento di audience [§4.1].",
+          "error": null,
+          "firstTokenMs": 2081,
+          "ms": 2260
+        }
+      ]
+    },
+    {
+      "id": "kb-tetto-sconto",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /25\\s?%/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 3893,
+      "turns": [
+        {
+          "message": "Qual è lo sconto massimo complessivo che possiamo concedere sul listino?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la policy sugli sconti e il massimo sconto complessivo concedibile sul listino.",
+              "input": "sconto massimo complessivo concedibile sul listino, livelli di sconto e approvazioni",
+              "ok": true,
+              "ms": 431,
+              "sources": [
+                "3.3",
+                "3.2",
+                "3",
+                "1.1",
+                "3.1"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Lo sconto massimo complessivo sul listino è del **25%**, e non è mai superabile: qualsiasi contratto con CPM contrattuale inferiore al 75% del listino è considerato fuori policy, anche se approvato, e va segnalato al Controllo di Gestione per la revisione trimestrale dei margini [§3.3].\n\nCome si compone:\n- **Sconto volume** (§3.2): 10% da 1 mln di impression pianificate, 15% da 3 mln, 20% da 6 mln sull'intera campagna (tutti gli aeroporti e tutti i giorni del flight); sotto il milione si applica il listino pieno [§3.2].\n- **Sconto aggiuntivo** (§3.3): fino a 5 punti percentuali oltre lo sconto volume, solo con approvazione scritta dell'Head of Sales (es. accordi annuali o lanci strategici) [§3.3].\n- Le eccezioni alle regole richiedono comunque approvazione scritta dell'Head of Sales, e prevale sempre la versione più recente dell'handbook [§1.1].\n\nNota: combinando il massimo sconto volume (20%) con i 5 punti aggiuntivi si arriva esattamente al tetto del 25%, quindi non esiste margine oltre.",
+          "error": null,
+          "firstTokenMs": 2804,
+          "ms": 3893
+        }
+      ]
+    },
+    {
+      "id": "kb-alcolici",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §7.2",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /Lounge/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /Baggage/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 3761,
+      "turns": [
+        {
+          "message": "Un marchio di liquori vuole comprare i Gate Screen: possiamo accettare?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico nella policy contenuti se le bevande alcoliche sono ammesse e con quali limiti.",
+              "input": "policy contenuti pubblicità bevande alcoliche liquori ammesse restrizioni",
+              "ok": true,
+              "ms": 499,
+              "sources": [
+                "7.2",
+                "7.1",
+                "2",
+                "1",
+                "2.3"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Controllo le specifiche e le regole di vendita del formato Gate Screen.",
+              "input": "formato Gate Screen specifiche tecniche aeroporti disponibilità",
+              "ok": true,
+              "ms": 533,
+              "sources": [
+                "2.1",
+                "3.1",
+                "10",
+                "7.2",
+                "1"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "No: per un marchio di alcolici il Gate Screen non è vendibile.\n\nSecondo la policy sulle categorie con restrizioni, gli alcolici sono ammessi **solo** nei formati Lounge Screen e Baggage Claim Wall, con messaggio di consumo responsabile, e mai nelle aree gate dei voli diretti verso paesi in cui la pubblicità di alcolici è vietata [§7.2]. Il Gate Screen è per definizione un formato installato nelle aree di imbarco [§2.1], quindi ricade proprio nell'area esclusa.\n\nCosa possiamo proporre in alternativa:\n- **Lounge Screen** (CPM di listino 32,00 €): schermi nelle lounge business e VIP, dwell tipico ~160 secondi, spot da 15 o 30 secondi; prenotabile a FCO, MXP, LIN, VCE e NAP salvo disponibilità speciali [§2.3; §3.1].\n- **Baggage Claim Wall** (CPM di listino 12,00 €): aree di ritiro bagagli, disponibile in rete [§3.1].\n\nIn entrambi i casi va previsto il messaggio di consumo responsabile in creatività [§7.2]. Se il brand ha in mente un periodo specifico, teniamo conto che nei mesi di picco (luglio, agosto, dicembre) conviene prenotare con almeno 6 settimane di anticipo [§10].",
+          "error": null,
+          "firstTokenMs": 2750,
+          "ms": 3761
+        }
+      ]
+    },
+    {
+      "id": "kb-reach",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §6.2",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /non (è|e') additiva|non si (può|possono) sommare|non va sommata|sovrastim/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 3640,
+      "turns": [
+        {
+          "message": "Posso sommare la reach giornaliera per dare al cliente il pubblico totale della campagna?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico nella documentazione come si calcola la reach di campagna e se è corretto sommare i valori giornalieri.",
+              "input": "reach giornaliera e reach di campagna: si possono sommare? definizione KPI e metodologia di misurazione",
+              "ok": true,
+              "ms": 426,
+              "sources": [
+                "6.2",
+                "6.7",
+                "12",
+                "6.4",
+                "6"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "No: la reach **non è additiva**, quindi non puoi sommare le reach giornaliere per ottenere il pubblico totale della campagna.\n\nIl motivo è che lo stesso passeggero può essere raggiunto in più giorni o in più aeroporti (per esempio all'andata e al ritorno), per cui la somma delle reach giornaliere sovrastima il pubblico reale [§6.2].\n\nCosa usare al posto della somma:\n- **Impression** per i confronti tra periodi o tra aeroporti [§6.2].\n- **Reach giornaliera media** nel report di fine campagna, insieme a impression pianificate/erogate, tasso di erogazione, dwell medio, scansioni QR, conversioni, CPM effettivo ed eventuale make-good [§6.7].\n- **Frequenza media** = impression diviso reach, calcolata sullo stesso giorno [§6.2].\n\nSe ti serve, posso far calcolare all'analista la reach giornaliera media e le impression della campagna in questione, così hai i numeri corretti da mettere nel report.",
+          "error": null,
+          "firstTokenMs": 2647,
+          "ms": 3640
+        }
+      ]
+    },
+    {
+      "id": "kb-attribuzione",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §6.4",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /7 giorni|sette giorni/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2691,
+      "turns": [
+        {
+          "message": "Entro quanto tempo dalla scansione del QR una conversione viene attribuita alla campagna?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la regola sulla finestra di attribuzione delle conversioni da scansione QR.",
+              "input": "finestra di attribuzione conversione scansione QR campagna",
+              "ok": true,
+              "ms": 368,
+              "sources": [
+                "6.4",
+                "12",
+                "6.7",
+                "2.6",
+                "8"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Una conversione viene attribuita alla campagna se l'azione del cliente (acquisto, riscatto coupon, registrazione) avviene **entro 7 giorni dalla scansione**, sullo stesso dispositivo [§6.4].\n\nLe scansioni sono misurate tramite i link tracciati forniti da Wayfare Media; il tasso di conversione è calcolato come conversioni diviso scansioni [§6.4].",
+          "error": null,
+          "firstTokenMs": 2482,
+          "ms": 2691
+        }
+      ]
+    },
+    {
+      "id": "kb-assente",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb | none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /non (è|sono|viene|vengono)? ?(present|indicat|trattat|riportat|disponibil|contenut|menzionat)|non (contiene|tratta|riporta|copre|include|trovo|ho trovato)|nessuna informazione/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 4116,
+      "turns": [
+        {
+          "message": "Qual è la policy aziendale sui rimborsi delle spese di trasferta dei dipendenti?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico se l'handbook aziendale contiene una policy sui rimborsi delle spese di trasferta dei dipendenti",
+              "input": "policy rimborso spese di trasferta dipendenti",
+              "ok": true,
+              "ms": 405,
+              "sources": [
+                "4.4",
+                "9",
+                "2.5",
+                "12",
+                "11"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "La documentazione aziendale non contiene alcuna policy sui rimborsi delle spese di trasferta dei dipendenti: l'handbook a disposizione è un manuale commerciale e operativo (formati, listino, condizioni di vendita, make-good, misurazione, FAQ per i media buyer) e non tratta temi di amministrazione del personale o note spese.\n\nPer questo tipo di richiesta conviene rivolgersi all'ufficio HR o all'amministrazione. Se invece ti serve una regola \"di viaggio\" intesa come modifiche o spostamenti di una campagna, sono a disposizione: le modifiche di date, aeroporti o formati richieste fino a 15 giorni prima del flight sono gratuite, salvo disponibilità di inventario [§4.4].",
+          "error": null,
+          "firstTokenMs": 3027,
+          "ms": 4116
+        }
+      ]
+    },
+    {
+      "id": "data-cpm-formato",
+      "categoria": "dati",
+      "route": "kb>data",
+      "optimal": false,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: data | kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 10.73",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 12.73",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 15.5",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 31.84",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 8.35",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 15496,
+      "turns": [
+        {
+          "message": "Qual è il CPM effettivo per formato?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico nell'handbook la definizione esatta di \"CPM effettivo\" prima di calcolarlo sui dati.",
+              "input": "definizione CPM effettivo e formula di calcolo",
+              "ok": true,
+              "ms": 451,
+              "sources": [
+                "6.5",
+                "3",
+                "3.1",
+                "5.2",
+                "3.3"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Calcolo il CPM effettivo per formato applicando la formula dell'handbook (spesa totale / impression erogate × 1.000).",
+              "input": "Calcola il CPM effettivo per ciascun formato pubblicitario sull'intero dataset delle campagne (gennaio 2025 - settembre 2026). Regola di business (handbook §6.5): il CPM effettivo di un insieme di righe si calcola come spesa totale diviso impression erogate totali, moltiplicato per 1.000; NON va calcolato come media semplice dei CPM delle singole righe. Quindi: raggruppa per formato, somma la spesa e somma le impression erogate, poi CPM effettivo = (spesa totale / impression erogate totali) * 1000. Considera solo i giorni con dato di erogazione valido (escludi righe con impression erogate mancanti o nulle). Mostra una tabella con: formato, spesa totale, impression erogate totali, CPM effettivo, e per confronto il CPM di listino (Gate Screen 18,00; Digital Totem 14,00; Lounge Screen 32,00; Wi-Fi Portal 9,00; Baggage Claim Wall 12,00). Aggiungi un grafico a barre del CPM effettivo per formato.",
+              "ok": true,
+              "ms": 10406,
+              "charts": 1
+            }
+          ],
+          "answer": "Il CPM effettivo per formato (gen 2025 – set 2026) è:\n\n| Formato | CPM effettivo | CPM di listino |\n|---|---|---|\n| Lounge Screen | 31,84 € | 32,00 € |\n| Gate Screen | 15,50 € | 18,00 € |\n| Digital Totem | 12,73 € | 14,00 € |\n| Baggage Claim Wall | 10,73 € | 12,00 € |\n| Wi-Fi Portal | 8,35 € | 9,00 € |\n\nIl CPM effettivo è calcolato come spesa totale diviso impression erogate totali per 1.000, non come media semplice dei CPM delle singole righe [§6.5]. Il CPM di listino è unico per tutti gli aeroporti della rete [§3.1].\n\nTutti i formati risultano venduti sotto listino: lo scostamento è minimo sul Lounge Screen (−0,5%) e più marcato sul Gate Screen (−13,9%), che da solo pesa per oltre metà della spesa. Il CPM effettivo complessivo del periodo è 14,00 € su 3,23 mln € di spesa e 230,6 mln di impression erogate (8.966 righe valide, nessuna esclusa per erogazione mancante).",
+          "error": null,
+          "firstTokenMs": 14671,
+          "ms": 15496
+        }
+      ]
+    },
+    {
+      "id": "data-campagne",
+      "categoria": "dati",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 177",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 9402,
+      "turns": [
+        {
+          "message": "Quante campagne distinte ci sono nel dataset?",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Conto il numero di campagne distinte presenti nel dataset delle campagne.",
+              "input": "Conta il numero di campagne distinte presenti nel dataset delle campagne Wayfare Media (periodo gen 2025 - set 2026). Considera come identificativo di campagna il codice campagna (es. WM-2025-0079). Restituisci il conteggio totale delle campagne distinte e, se utile, indica anche il numero di inserzionisti distinti. Non serve un grafico.",
+              "ok": true,
+              "ms": 6682,
+              "charts": 0
+            }
+          ],
+          "answer": "Nel dataset sono presenti **177 campagne distinte**, distribuite su **22 inserzionisti**, nel periodo 1° gennaio 2025 – 30 settembre 2026.\n\nQualche nota di contesto utile:\n- Il portafoglio è molto frammentato: in media circa 8 campagne per inserzionista e nessun cliente supera il 9% del totale.\n- 5 campagne risultano ancora in corso alla data di estrazione (flight con fine oltre il 30 settembre 2026) e 5 hanno un flight iniziato a dicembre 2024: per queste i dati di performance vanno letti come parziali.\n- Il conteggio si basa sui codici campagna presenti nelle righe valide del dataset; eventuali campagne interamente escluse per erogazione mancante o errata non sarebbero rilevabili.",
+          "error": null,
+          "firstTokenMs": 8669,
+          "ms": 9402
+        }
+      ]
+    },
+    {
+      "id": "data-impression-totali",
+      "categoria": "dati",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 230630486",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 3228621.91",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 10743,
+      "turns": [
+        {
+          "message": "Quante impression sono state erogate in totale e quanto è la spesa complessiva?",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Calcolo i totali di impression erogate e spesa sull'intero dataset delle campagne.",
+              "input": "Sull'intero dataset delle campagne Wayfare Media (periodo gennaio 2025 - settembre 2026, tutti gli aeroporti, tutti i formati, tutti gli inserzionisti), calcola: 1) il totale delle impression erogate (somma della colonna delle impression erogate); 2) la spesa complessiva (somma della colonna spesa). Riporta i due valori totali in forma sintetica, senza filtri aggiuntivi.",
+              "ok": true,
+              "ms": 8274,
+              "charts": 0
+            }
+          ],
+          "answer": "Nel periodo gennaio 2025 – settembre 2026, sull'intero perimetro (8 aeroporti, 177 campagne):\n\n- **Impression erogate: 230,6 milioni**\n- **Spesa complessiva: 3.228.621,87 €**\n\nIl tasso di erogazione è del 99,0% rispetto ai 232,9 milioni di impression pianificate, con un CPM effettivo di 14,00 €. I totali includono anche le 5 campagne il cui flight si chiude dopo il 30/09/2026 e sono calcolati al netto delle righe con dato di erogazione mancante o negativo, rimosse in fase di pulizia dei dati.",
+          "error": null,
+          "firstTokenMs": 10340,
+          "ms": 10743
+        }
+      ]
+    },
+    {
+      "id": "data-qr-lusso",
+      "categoria": "dati",
+      "route": "kb>data",
+      "optimal": false,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: data | kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /CTA|Catania/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 0.693",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 22736,
+      "turns": [
+        {
+          "message": "Per le campagne del settore Lusso, in quale aeroporto il tasso di scansione QR è più alto?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la definizione esatta di tasso di scansione QR, per poi applicarla correttamente ai dati.",
+              "input": "definizione tasso di scansione QR (scan rate) e formula di calcolo",
+              "ok": true,
+              "ms": 514,
+              "sources": [
+                "6.4",
+                "12",
+                "6.6",
+                "6.7",
+                "2.6"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Calcolo il tasso di scansione QR (scansioni/impression erogate) per aeroporto sulle campagne del settore Lusso, applicando le regole di pulizia dati.",
+              "input": "Considerando solo le campagne del settore \"Lusso\" (verifica il nome esatto del settore nel dataset, es. \"Lusso\"/\"Luxury\"), calcolami per ciascun aeroporto il tasso di scansione QR = somma delle scansioni QR diviso somma delle impression erogate, espresso in percentuale. Periodo: intero dataset disponibile (gen 2025 - set 2026).\n\nRegole di pulizia dati da applicare (handbook §6.6):\n1) Escludere dal calcolo (sia numeratore sia denominatore) le giornate in cui il dato di erogazione manca o è palesemente errato (es. erogato negativo o nullo per errore di log).\n2) Considerare non disponibili, e quindi escludere dal calcolo, i valori impossibili di scansioni QR (es. scansioni superiori alle impression erogate in quella giornata); questi valori non vanno conteggiati né come scansioni né come impression.\n\nOutput richiesto: tabella per aeroporto con impression erogate valide, scansioni QR valide, tasso QR %, numero di campagne considerate; ordinamento decrescente per tasso QR e indicazione esplicita dell'aeroporto con tasso più alto. Aggiungi un grafico a barre dei tassi QR per aeroporto.",
+              "ok": true,
+              "ms": 14744,
+              "charts": 1
+            }
+          ],
+          "answer": "**CTA (Catania)** è l'aeroporto con il tasso di scansione QR più alto sulle campagne del settore Lusso: **0,693%**, davanti a FCO (0,592%) e MXP (0,492%).\n\nIl tasso QR è calcolato come scansioni QR diviso impression erogate [§6.4]; l'analisi applica inoltre l'esclusione delle giornate senza dato di erogazione valido e dei valori impossibili di scansioni (più scansioni che impression) [§6.6].\n\nDati di sintesi (28 campagne, 1.464 giornate valide, tasso complessivo 0,463%):\n\n| Aeroporto | Tasso QR |\n|---|---|\n| CTA | 0,693% |\n| FCO | 0,592% |\n| MXP | 0,492% |\n| BGY | 0,330% |\n| NAP | 0,320% |\n\nDue cautele nel leggere il dato: CTA pesa su una sola campagna, quindi il primato va verificato su volumi maggiori prima di essere esteso come benchmark di aeroporto; inoltre il tasso QR dipende anche dal formato e dal segmento, non solo dal contesto aeroportuale [§12].",
+          "error": null,
+          "firstTokenMs": 21548,
+          "ms": 22736
+        }
+      ]
+    },
+    {
+      "id": "data-grafico-mensile",
+      "categoria": "dati",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "grafico",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 17123,
+      "turns": [
+        {
+          "message": "Mostrami con un grafico l'andamento mensile delle impression erogate.",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Chiedo all'analista il trend mensile delle impression erogate per il periodo disponibile.",
+              "input": "Calcola l'andamento mensile delle impression erogate nel dataset delle campagne Wayfare Media, sull'intero periodo disponibile (gennaio 2025 - settembre 2026). Raggruppa per mese (anno-mese) e riporta per ciascun mese il totale delle impression erogate. Produci un grafico a linee con i mesi sull'asse x e le impression erogate sull'asse y. Indica anche il totale complessivo del periodo e il mese con il valore massimo e quello con il valore minimo. Specifica se ci sono mesi parziali o incompleti da segnalare.",
+              "ok": true,
+              "ms": 13660,
+              "charts": 1
+            }
+          ],
+          "answer": "Ecco l'andamento mensile delle impression erogate (gen 2025 – set 2026).\n\n- **Totale periodo:** 230,6 milioni di impression su 21 mesi pieni, media ~11,0 mln/mese.\n- **Picco:** luglio 2025 con 23,5 mln.\n- **Minimo:** febbraio 2026 con 2,5 mln; febbraio resta il mese più debole in entrambi gli anni (2,5–2,8 mln), un andamento stagionale ricorrente.\n- **Nota sui dati:** nessun mese parziale; sono escluse 145 righe dell'export con dato di erogazione mancante o errato (non incluse nei totali).\n\nSe ti serve la stessa serie filtrata per un aeroporto, un formato o un settore, dimmelo e la preparo.",
+          "error": null,
+          "firstTokenMs": 16512,
+          "ms": 17123
+        }
+      ]
+    },
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 26904,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la regola esatta del make-good: condizioni, soglie ed esclusioni da applicare poi ai dati.",
+              "input": "make-good garanzia di erogazione condizioni soglia esclusioni",
+              "ok": true,
+              "ms": 339,
+              "sources": [
+                "5.2",
+                "5.3",
+                "6.6",
+                "5.4",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico la regola di make-good (§5.2, §5.3, §6.6) al dataset per individuare le campagne aventi diritto e il valore complessivo.",
+              "input": "Individua le campagne che hanno diritto al make-good e calcola il valore totale del make-good in euro.\n\nRegola da applicare (handbook §5.2, §5.3, §6.6):\n1) Hanno diritto SOLO le campagne concluse (flight terminato entro il 30/09/2026): le campagne ancora in corso sono escluse.\n2) Condizione: la campagna ha erogato meno del 95% delle impression pianificate sull'intero flight.\n3) Valore make-good in euro = (impression pianificate − impression erogate) × CPM contrattuale / 1000. Usa il CPM contrattuale della campagna.\n4) Pulizia dati (§6.6): per ogni campagna escludi dal calcolo sia il pianificato sia l'erogato dei giorni in cui il dato di erogazione manca o è palesemente errato (es. negativo). Ricalcola quindi pianificato ed erogato solo sui giorni con dato valido e usa questi valori per la percentuale di erogazione e per il valore del make-good. I valori impossibili di dwell time o scansioni QR (es. più scansioni che impression) NON invalidano la giornata: non escluderli.\n5) Esclusioni (§5.3): escludi le campagne sospese o modificate su richiesta del cliente e le campagne con creatività consegnate in ritardo rispetto alla scadenza (§2.6). Verifica se il dataset contiene campi che segnalano stato sospensione/modifica o ritardo della creatività; se non li contiene, segnalalo esplicitamente e applica solo i filtri possibili.\n6) Le campagne su Venezia VCE interessate dai lavori (12/01/2026-29/03/2026) seguono le regole ordinarie: non applicare trattamenti speciali, nessuna esclusione aggiuntiva.\n\nOutput richiesto:\n- elenco delle campagne aventi diritto con codice campagna (WM-...), inserzionista, aeroporto, formato, impression pianificate valide, impression erogate valide, % di erogazione, CPM contrattuale e valore del make-good in euro;\n- numero di campagne aventi diritto e valore totale del make-good in euro;\n- evidenza di eventuali campagne escluse per sospensione/modifica o ritardo creatività, se i dati lo permettono;\n- un grafico a barre del valore del make-good per campagna (top 10 se sono molte).",
+              "ok": true,
+              "ms": 17118,
+              "charts": 1
+            }
+          ],
+          "answer": "**18 campagne hanno diritto al make-good, per un valore totale di 30.450,54 €.**\n\nLa regola applicata: spetta il make-good alle campagne concluse che hanno erogato meno del 95% del pianificato, con valore pari a (pianificate − erogate) × CPM contrattuale / 1000 [§5.2]. Sono esclusi i flight ancora in corso, le campagne sospese o modificate su richiesta del cliente e quelle con creatività consegnata in ritardo [§5.3]. Il calcolo considera solo i giorni con dato di erogazione valido [§6.6].\n\nDettagli rilevanti:\n- I tassi di erogazione delle 18 campagne vanno dall'84,2% al 94,2%; i valori maggiori sono su **WM-2026-0096 (Caffè Montano, 5.381,81 €)**, **WM-2025-0088 (Vigna Antica, 4.541,88 €)** e **WM-2025-0173 (Nordvik Outdoor, 2.690,76 €)**.\n- Sono state escluse 5 campagne ancora in corso e 140 campagne concluse con erogazione ≥95%.\n- **14 campagne con creatività in ritardo** (`creativita_in_ritardo`) sono state escluse per la §5.3: avrebbero generato altri 56.324,34 € di make-good. Vale la pena verificarle con il cliente.\n- Non è verificabile l'esclusione per campagne \"sospese o modificate su richiesta del cliente\": il dataset non contiene un campo di stato/sospensione, quindi è stato applicato solo il filtro sulla creatività in ritardo.\n- Le campagne su Venezia interessate dai lavori (12/01–29/03/2026) sono state trattate con le regole ordinarie, come previsto dalla §5.4.\n- La pulizia dei dati ha escluso 145 righe con dato di erogazione mancante (nessun caso di erogato negativo); i valori anomali di dwell time o scansioni QR non sono stati esclusi, come da §6.6.\n\nAzione consigliata: riconoscere i 30.450,54 € alle 18 campagne elencate e aprire una verifica sulle 14 campagne con creatività in ritardo, che rappresentano il maggior potenziale di contestazione.",
+          "error": null,
+          "firstTokenMs": 24526,
+          "ms": 26904
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": false,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": false,
+          "detail": ""
+        }
+      ],
+      "ok": false,
+      "ms": 23296,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la policy sugli sconti per capire quali sconti sono fuori policy e con quali soglie/esclusioni.",
+              "input": "policy sconti commerciali: sconti consentiti, soglie di sconto massimo, sconti fuori policy, condizioni ed esclusioni",
+              "ok": true,
+              "ms": 371,
+              "sources": [
+                "3.3",
+                "3.2",
+                "1.1",
+                "3",
+                "7.1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico la regola del §3.3 ai dati: cerco i contratti con sconto complessivo superiore al 25% (CPM contrattuale sotto il 75% del listino).",
+              "input": "Obiettivo: individuare i contratti/campagne con sconto fuori policy secondo la regola aziendale §3.3 dell'handbook: \"Lo sconto complessivo sul listino non può mai superare il 25%. Qualsiasi contratto con CPM contrattuale inferiore al 75% del listino è fuori policy\".\n\nPerimetro: tutte le campagne del dataset (gen 2025 - set 2026), tutti gli aeroporti, tutti i formati, tutti gli inserzionisti. Nessuna esclusione.\n\nCosa fare:\n1. Per ogni campagna calcola il CPM di listino di riferimento (prezzo pieno, senza sconti) e il CPM contrattuale effettivo, e da questi lo sconto complessivo percentuale = 1 - (CPM contrattuale / CPM di listino).\n2. Se il dataset non contiene direttamente il CPM di listino, ricavalo/ricostruiscilo dal listino per formato disponibile nei dati e spiega nel risultato come l'hai determinato.\n3. Filtra le campagne con sconto complessivo > 25% (equivalentemente CPM contrattuale < 75% del CPM di listino).\n4. Restituisci l'elenco di queste campagne con: codice campagna (es. WM-2025-0079), inserzionista, aeroporto, formato, periodo di flight, CPM di listino, CPM contrattuale, sconto % applicato, impression pianificate e spesa.\n5. Indica quante campagne risultano fuori policy sul totale e, se utile, una tabella riepilogativa per inserzionista.\n\nOutput: elenco dettagliato delle campagne fuori policy e conteggio complessivo.",
+              "ok": true,
+              "ms": 15580,
+              "charts": 1
+            }
+          ],
+          "answer": "Sì: **7 contratti su 177 (4,0%) risultano fuori policy**, con sconto complessivo superiore al tetto del 25% previsto dall'handbook [§3.3].\n\nI casi rilevati (codice campagna e dettagli nella tabella sotto):\n- **32% di sconto** (7 punti oltre soglia): Linea Sartori, Maison Verbena, Caffè Montano, Orizzonte Viaggi\n- **30% di sconto**: Dolce Alpi (unico inserzionista con due contratti fuori policy)\n- **29% di sconto**: Soundwave Audio\n\nContesto: la spesa coinvolta è di **121.923 € su 3.228.622 € totali (3,8%)**, con Caffè Montano come caso più pesante (43.195 €). Lo sconto medio dell'intero portafoglio è del 7,3%, quindi si tratta di casi isolati ma marcati.\n\nNota metodologica: il dataset non riporta un listino per campagna, ma il CPM di listino è costante e univoco per formato (Wi-Fi Portal 9 €, Baggage Claim Wall 12 €, Digital Totem 14 €, Gate Screen 18 €, Lounge Screen 32 €); il confronto è stato fatto tra quel valore e il CPM contrattuale effettivo. La regola applicata è quella del §3.3: sconto complessivo mai oltre il 25%, quindi CPM contrattuale inferiore al 75% del listino = fuori policy, da segnalare al Controllo di Gestione per la revisione trimestrale dei margini. Il tetto del 25% si compone dello sconto volume (10/15/20% per fasce di impression pianificate) più l'eventuale sconto aggiuntivo fino a 5 punti con approvazione scritta dell'Head of Sales [§3.2; §3.3].\n\nSuggerimento operativo: regolarizzare o riapprovare formalmente i 7 contratti — in particolare i quattro al 32% — e introdurre un controllo bloccante sul CPM contrattuale minimo (75% del listino di formato) in fase di preventivazione.",
+          "error": null,
+          "firstTokenMs": 21846,
+          "ms": 23296
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 25190,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la regola di garanzia di erogazione e make-good, con condizioni ed esclusioni.",
+              "input": "garanzia di erogazione e make-good: condizioni, soglie, esclusioni",
+              "ok": true,
+              "ms": 482,
+              "sources": [
+                "5.2",
+                "5.3",
+                "6.6",
+                "11",
+                "5.1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Verifico se la documentazione prevede eccezioni per lavori/cantieri negli aeroporti.",
+              "input": "lavori cantieri aeroporto riduzione erogazione cause non imputabili esclusioni make-good",
+              "ok": true,
+              "ms": 501,
+              "sources": [
+                "12",
+                "5.4",
+                "5.3",
+                "5.2",
+                "1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Analizzo l'erogazione delle campagne a Venezia durante i lavori e calcolo il make-good spettante secondo le regole §5.1-5.4, §5.3 e §6.6.",
+              "input": "Analizza le campagne Wayfare Media che hanno avuto erogazione sull'aeroporto di Venezia (VCE) nel periodo dei lavori 12 gennaio - 29 marzo 2026.\n\nObiettivo 1 — Andamento: mostra l'andamento mensile (o settimanale) delle impression pianificate ed erogate a VCE da gennaio 2026 a settembre 2026, con il tasso di erogazione (erogate/pianificate) per mese, per evidenziare se e quanto l'erogazione è calata durante i lavori (12 gen - 29 mar 2026) rispetto ai mesi successivi (dal 30 marzo 2026, quando l'inventario è tornato pienamente operativo). Genera un grafico.\n\nObiettivo 2 — Make-good: individua le campagne concluse (data di fine flight già passata rispetto all'ultima data del dataset) che hanno avuto erogazione a VCE e che nel loro complesso (tutti gli aeroporti e tutti i giorni del flight, non solo VCE) hanno erogato meno del 95% delle impression pianificate. Per ciascuna riporta: codice campagna, inserzionista, data inizio e fine flight, impression pianificate totali, impression erogate totali, tasso di erogazione %, CPM contrattuale e valore del make-good in euro calcolato come (impression pianificate − impression erogate) × CPM contrattuale / 1000.\n\nRegole di business da applicare (handbook):\n- §5.1: la garanzia è del 95% delle impression pianificate, verificata a livello di campagna sommando tutti gli aeroporti e tutti i giorni del flight, solo a campagna conclusa.\n- §5.2: se una campagna conclusa ha erogato meno del 95% del pianificato, il make-good copre l'intera differenza tra pianificato ed erogato, con la formula sopra.\n- §5.3 ESCLUSIONI: escludi dal make-good (a) le campagne con creatività consegnate in ritardo rispetto alla scadenza; (b) le campagne sospese o modificate su richiesta del cliente; (c) le campagne ancora in corso. Indica esplicitamente quali campagne hai escluso per ciascuno di questi motivi, se presenti nel dataset.\n- §6.6: escludi dal calcolo sia dal pianificato sia dall'erogato i giorni con dato di erogazione mancante o palesemente errato (es. valori negativi); i valori impossibili di dwell time o scansioni QR non invalidano la giornata.\n\nRiporta anche il totale del valore di make-good spettante ai clienti coinvolti.",
+              "ok": true,
+              "ms": 16096,
+              "charts": 1
+            }
+          ],
+          "answer": "Sì, l'erogazione a Venezia è calata in modo netto durante i lavori, e a 5 campagne spetta il make-good.\n\n**Andamento a VCE (gen–set 2026)**\n- Tasso di erogazione complessivo: **92,5%** (8,59 mln erogate su 9,29 mln pianificate).\n- Durante i lavori (12 gen–29 mar 2026): **75,6%** (611.090 su 808.904), minimo a marzo (75,2%).\n- Dal 30 marzo, a inventario ripristinato: **93,9%**, con punte del 97–100% da luglio a settembre.\n- Il calo è quindi di circa 18 punti percentuali rispetto al regime normale.\n\n**Make-good spettante**\nLa garanzia è del 95% delle impression pianificate, verificata a livello di campagna (tutti gli aeroporti e tutti i giorni del flight) e solo a flight concluso [§5.1]; sotto quella soglia il make-good copre l'intera differenza tra pianificato ed erogato, con la formula (pianificate − erogate) × CPM / 1000 [§5.2]. I lavori di VCE non cambiano le regole: se a fine flight la campagna è sotto il 95%, il make-good spetta automaticamente [§5.4].\n\nDelle 49 campagne con erogazione a VCE, 12 sono sotto il 95%; di queste 7 sono escluse perché la creatività è stata consegnata in ritardo [§5.3]. Restano **5 campagne con make-good dovuto, per un totale di 4.535,03 €**:\n- Banca Meridiana — WM-2025-0017: 1.579,71 €\n- Vigna Antica — WM-2026-0040: 1.069,46 €\n- Orizzonte Viaggi — WM-2026-0156: 861,54 €\n- Vigna Antica — WM-2026-0021: 637,01 €\n- Essenza Profumi — WM-2026-0128: 387,31 €\n\nDue note operative: nessuna campagna risulta ancora in corso [§5.3] e il dataset non contiene un campo di stato, quindi l'esclusione per campagne sospese o modificate su richiesta del cliente non è verificabile dai dati [§5.3]. Il make-good va usato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].",
+          "error": null,
+          "firstTokenMs": 23518,
+          "ms": 25190
+        }
+      ]
+    },
+    {
+      "id": "conv-saluto",
+      "categoria": "conversazione e fuori ambito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2117,
+      "turns": [
+        {
+          "message": "Ciao! Cosa sai fare?",
+          "steps": [],
+          "answer": "Ciao! Sono l'assistente del reparto Media Sales & Campaign Performance di Wayfare Media, la concessionaria che gestisce la pubblicità digitale negli aeroporti di FCO, MXP, LIN, BGY, VCE, NAP, BLQ e CTA.\n\nPosso aiutarti in due modi:\n\n- **Regole e procedure**: rispondo su listino CPM, sconti e condizioni di vendita, cancellazioni, garanzia di erogazione e make-good, specifiche dei formati, policy sui contenuti, privacy, metodologia di misurazione e definizioni dei KPI.\n- **Dati delle campagne**: analizzo il dataset delle campagne (gennaio 2025 – settembre 2026) per numeri, andamenti, classifiche e grafici su impression, reach, dwell time, scansioni QR, conversioni, CPM e spesa, con filtri per inserzionista, settore, aeroporto, formato e periodo.\n\nPosso anche combinare le due cose: recuperare una regola dall'handbook e applicarla ai dati, ad esempio per verificare make-good, sconti fuori policy o rispetto delle condizioni contrattuali.\n\nDimmi pure da cosa vuoi partire.",
+          "error": null,
+          "firstTokenMs": 1084,
+          "ms": 2117
+        }
+      ]
+    },
+    {
+      "id": "conv-meteo",
+      "categoria": "conversazione e fuori ambito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 1389,
+      "turns": [
+        {
+          "message": "Che tempo farà domani a Milano?",
+          "steps": [],
+          "answer": "Mi dispiace, ma le previsioni meteo non rientrano nel mio ambito: sono l'assistente del reparto Media Sales & Campaign Performance di Wayfare Media e mi occupo di pubblicità digitale negli aeroporti italiani.\n\nPosso però aiutarti su cose come:\n- **Regole e policy**: listino CPM, sconti, condizioni di vendita, cancellazioni, make-good, specifiche dei formati, privacy, metodologia di misurazione.\n- **Dati delle campagne** (gen 2025 – set 2026): impression pianificate/erogate, reach, dwell, scansioni QR, conversioni, CPM, spesa, con classifiche e andamenti per aeroporto, inserzionista, settore, formato o periodo.\n\nDimmi pure cosa ti serve e ci penso io.",
+          "error": null,
+          "firstTokenMs": 900,
+          "ms": 1389
+        }
+      ]
+    },
+    {
+      "id": "conv-codice",
+      "categoria": "conversazione e fuori ambito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2208,
+      "turns": [
+        {
+          "message": "Scrivimi una funzione Python che ordina una lista di numeri.",
+          "steps": [],
+          "answer": "Mi dispiace, ma questa richiesta non rientra nel mio ambito: sono l'assistente del reparto Media Sales & Campaign Performance di Wayfare Media e mi occupo di campagne pubblicitarie sui nostri otto aeroporti (FCO, MXP, LIN, BGY, VCE, NAP, BLQ, CTA), non di programmazione generica.\n\nPosso però aiutarti su cose come:\n- regole e policy aziendali (listino CPM, sconti, cancellazioni, make-good, specifiche formati, KPI);\n- numeri e andamenti delle campagne (impression, reach, dwell, scansioni QR, conversioni, spesa, CPM);\n- applicazione delle regole ai dati (es. verifica make-good o sconti fuori policy).\n\nSe hai una domanda su uno di questi temi, sono a disposizione.",
+          "error": null,
+          "firstTokenMs": 1366,
+          "ms": 2208
+        }
+      ]
+    },
+    {
+      "id": "seguito-aeroporto",
+      "categoria": "domande di seguito",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "compito con /MXP|Malpensa/",
+          "ok": true,
+          "detail": "Calcola il tasso di erogazione mensile per l'aeroporto di Milano Malpensa (MXP) limitatamente al 2026 (gennaio 2026 - settembre 2026). Per ogni mese riporta in "
+        }
+      ],
+      "ok": true,
+      "ms": 14991,
+      "turns": [
+        {
+          "message": "Qual è il tasso di erogazione mensile di Venezia nel 2026?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico nell'handbook la definizione esatta di tasso di erogazione prima di calcolarlo sui dati.",
+              "input": "definizione tasso di erogazione e formula di calcolo",
+              "ok": true,
+              "ms": 376,
+              "sources": [
+                "5.2",
+                "6.5",
+                "6.6",
+                "6.7",
+                "6.2"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": null,
+              "input": "Calcola il tasso di erogazione mensile per l'aeroporto di Venezia (VCE) limitatamente al 2026 (gennaio 2026 - settembre 2026): per ogni mese riporta la somma delle impression erogate, la somma delle impression pianificate e il tasso di erogazione = impression erogate / impression pianificate * 100, con una riga per mese in ordine cronologico. Mostra anche un grafico dell'andamento mensile del tasso di erogazione. Fornisci inoltre il totale del periodo 2026.",
+              "ok": true,
+              "ms": 8667,
+              "charts": 1
+            }
+          ],
+          "answer": "**Venezia (VCE) — 2026, gennaio–settembre: tasso di erogazione complessivo 92,45%** (8.591.716 impression erogate su 9.293.145 pianificate).\n\nAndamento mensile:\n- gen 83,1% · feb 80,2% · mar 75,2% (minimo del periodo)\n- apr 97,8% · mag 87,2% · giu 89,8%\n- lug 97,7% · ago 98,1% · set 100,1%\n\nIl dato è calcolato come impression erogate su pianificate; l'handbook richiama il tasso di erogazione come KPI standard del report di fine campagna [§6.7] e fissa al 95% la soglia sotto la quale scatta il diritto al make-good [§5.2]. Il calcolo è stato fatto solo sulle righe valide, escludendo le giornate con dato di erogazione mancante o negativo come previsto dalla regola sui dati anomali [§6.6].\n\nNota utile: marzo è l'unico mese sotto il 75–80% insieme a gennaio e febbraio, mentre da aprile il tasso resta stabilmente sopra il 97%. Sui singoli flight conclusi con erogazione inferiore al 95% va verificato il make-good maturato ai sensi di [§5.2]: posso farli elencare per VCE con il relativo valore in euro.",
+          "error": null,
+          "firstTokenMs": 14505,
+          "ms": 16090
+        },
+        {
+          "message": "E per Malpensa?",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Applico a Malpensa la stessa analisi fatta per Venezia, con la stessa regola di esclusione delle giornate non valide.",
+              "input": "Calcola il tasso di erogazione mensile per l'aeroporto di Milano Malpensa (MXP) limitatamente al 2026 (gennaio 2026 - settembre 2026). Per ogni mese riporta in ordine cronologico: somma delle impression erogate, somma delle impression pianificate e tasso di erogazione = impression erogate / impression pianificate * 100. Regola di business da applicare (handbook §6.6): le giornate con dato di erogazione mancante o palesemente errato (es. negativo) vanno escluse sia dal pianificato sia dall'erogato; i valori impossibili di dwell time o scansioni QR non invalidano la giornata. Mostra anche un grafico dell'andamento mensile del tasso di erogazione. Fornisci inoltre il totale del periodo 2026 (erogate, pianificate, tasso complessivo) e indica quale mese ha il tasso più basso e quale il più alto.",
+              "ok": true,
+              "ms": 7580,
+              "charts": 1
+            }
+          ],
+          "answer": "**Malpensa (MXP) — 2026, gennaio–settembre: tasso di erogazione complessivo 100,09%** (26.172.855 impression erogate su 26.149.897 pianificate), quindi la programmazione è sostanzialmente rispettata, con alcuni mesi in leggero eccesso.\n\nAndamento: il mese più debole è **aprile (97,25%)**, seguito da febbraio (97,80%) e giugno (98,17%); il più alto è **luglio (102,87%)**, con gennaio (102,23%) e maggio (101,76%) sopra il 100%. I volumi sono molto concentrati nell'estate: giugno–agosto valgono oltre il 60% delle impression erogate del periodo.\n\nIl calcolo segue la stessa metodologia usata per Venezia: sono state escluse 12 giornate MXP del 2026 con dato di erogazione mancante o errato, sia dal pianificato sia dall'erogato, mentre i valori impossibili di dwell time o scansioni QR non hanno determinato esclusioni [§6.6]. Il periodo si ferma a settembre 2026, data di estrazione del dataset.\n\nRispetto a Venezia la situazione è opposta: su MXP nessun mese scende sotto la soglia del 95% e quindi non si profila, su base mensile, il presupposto del make-good previsto per le campagne che chiudono sotto il 95% [§5.2]. Se ti serve, posso verificare i singoli flight MXP conclusi sotto soglia con il valore del make-good in euro.",
+          "error": null,
+          "firstTokenMs": 13307,
+          "ms": 14991
+        }
+      ]
+    },
+    {
+      "id": "seguito-penale",
+      "categoria": "domande di seguito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none | kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /100\\s?%/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2016,
+      "turns": [
+        {
+          "message": "Che penale c'è se il cliente cancella 20 giorni prima del flight?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le penali di cancellazione e le soglie di preavviso.",
+              "input": "penale cancellazione campagna preavviso giorni prima del flight",
+              "ok": true,
+              "ms": 355,
+              "sources": [
+                "4.3",
+                "4.4",
+                "5.1",
+                "2.6",
+                "12"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Con 20 giorni di preavviso la penale è del **25% del valore pianificato** della campagna (impression pianificate × CPM contrattuale) [§4.3].\n\nIl calcolo si basa sui giorni di calendario che mancano all'inizio del flight, con queste fasce [§4.3]:\n\n- oltre 30 giorni prima: nessuna penale\n- **da 15 a 30 giorni prima: 25%** ← il tuo caso\n- da 7 a 14 giorni prima: 50%\n- meno di 7 giorni prima o flight già iniziato: 100% del valore residuo\n\nNota utile: se il cliente volesse invece spostare date, aeroporti o formati, la modifica è gratuita fino a 15 giorni prima del flight (salvo disponibilità di inventario); dopo quel termine viene trattata come cancellazione parziale più nuova prenotazione [§4.4]. A 20 giorni, quindi, una modifica sarebbe ancora gratuita mentre una cancellazione costa il 25%.",
+          "error": null,
+          "firstTokenMs": 3120,
+          "ms": 3797
+        },
+        {
+          "message": "E se mancano solo 5 giorni?",
+          "steps": [],
+          "answer": "Con 5 giorni di preavviso si ricade nella fascia più onerosa: **penale del 100% del valore residuo** della campagna [§4.3].\n\nRiepilogo delle fasce, per confronto [§4.3]:\n\n- oltre 30 giorni prima: nessuna penale\n- da 15 a 30 giorni prima: 25%\n- da 7 a 14 giorni prima: 50%\n- **meno di 7 giorni prima, o a flight già iniziato: 100% del valore residuo** ← il tuo caso\n\nAttenzione anche alla strada alternativa: a 5 giorni non è più possibile neanche modificare date, aeroporti o formati gratuitamente, perché le modifiche sono gratuite solo fino a 15 giorni prima del flight e dopo quel termine sono trattate come cancellazione parziale più nuova prenotazione [§4.4].",
+          "error": null,
+          "firstTokenMs": 1351,
+          "ms": 2016
+        }
+      ]
+    }
+  ]
+}

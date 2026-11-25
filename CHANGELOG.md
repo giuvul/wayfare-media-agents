@@ -6,6 +6,19 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 
 ## [Non rilasciato]
 
+### Corretto
+- I modelli più recenti di Anthropic e OpenAI (es. Claude Haiku 5.5, GPT-6 Luna) non funzionavano: non accettano il
+  parametro `temperature` e, con `provider.require_parameters`, OpenRouter rifiutava la richiesta (404). Con il
+  modello di riserva attivo l'app passava in silenzio a quello. Ora back end e data agent inviano `temperature: 0`
+  solo ai modelli che la supportano secondo il catalogo OpenRouter, e la omettono se il catalogo non risponde.
+- Valutazione: un turno finito in errore non conta più come percorso corretto.
+
+### Aggiunto
+- Confronto tra modelli nella valutazione (DeepSeek V4.1 Flash, Claude Haiku 5.5, GPT-6 Luna), eseguito senza
+  modello di riserva.
+
+## [d341ffb] - 2026-11-25 - Valutazione dell'orchestrazione, scadenza del turno e Docker
+
 ### Aggiunto
 - Valutazione dell'orchestrazione (`eval/`): 20 casi in 5 categorie (documentazione, dati, regola applicata ai
   dati, conversazione e fuori ambito, domande di seguito) con percorso degli strumenti atteso, citazioni, testo e
@@ -153,7 +166,8 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/5682f8e...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/d341ffb...HEAD
+[d341ffb]: https://github.com/giuvul/wayfare-media-agents/commit/d341ffb
 [5682f8e]: https://github.com/giuvul/wayfare-media-agents/commit/5682f8e
 [ac52964]: https://github.com/giuvul/wayfare-media-agents/commit/ac52964
 [1a3f038]: https://github.com/giuvul/wayfare-media-agents/commit/1a3f038

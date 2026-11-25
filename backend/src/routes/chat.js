@@ -63,7 +63,7 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
 
     try {
       const result = await runTurn({
-        agent: getAgent(),
+        agent: await getAgent(),
         checkpointer,
         sessionId,
         message,

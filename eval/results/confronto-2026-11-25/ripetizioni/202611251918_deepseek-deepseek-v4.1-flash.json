@@ -1,0 +1,690 @@
+{
+  "summary": {
+    "data": "2026-11-25T19:18:45.926Z",
+    "modello": "deepseek/deepseek-v4.1-flash",
+    "casi": 9,
+    "superati": 9,
+    "percorso_corretto": 9,
+    "percorso_ottimale": 9,
+    "errori": 0,
+    "tempo_mediano_s": 36.16,
+    "tempo_p90_s": 51.093,
+    "costo_usd": 0.0374
+  },
+  "results": [
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 36160,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le regole sul make-good: condizioni di diritto, soglie e esclusioni.",
+              "input": "make-good garanzia di erogazione: condizioni, soglie, calcolo del valore e esclusioni",
+              "ok": true,
+              "ms": 260,
+              "sources": [
+                "5.2",
+                "6.6",
+                "5.3",
+                "5.4",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Recupero la scadenza di consegna creatività (§2.6) e le definizioni utili per applicare le esclusioni al make-good.",
+              "input": "scadenza consegna creatività sezione 2.6: termine ultimo prima dell'inizio campagna",
+              "ok": true,
+              "ms": 274,
+              "sources": [
+                "2.6",
+                "5.3",
+                "7.3",
+                "12",
+                "6.7"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico la regola del make-good (§5.2, §5.3, §6.6) al dataset per individuare le campagne aventi diritto e il valore totale.",
+              "input": "Individua le campagne che hanno diritto a un make-good e calcola il valore totale del make-good.\n\nRegola da applicare (handbook §5.2, §5.3, §6.6):\n1) Hanno diritto al make-good le campagne CONCLUSE (flight terminato) che hanno erogato meno del 95% del pianificato. Il tasso di erogazione va calcolato come impression erogate / impression pianificate.\n2) Valore del make-good in euro = (impression pianificate − impression erogate) × CPM contrattuale / 1000, e copre l'intera differenza tra pianificato ed erogato.\n3) Esclusioni da applicare (nessun diritto a make-good):\n   - campagne con creatività consegnate in ritardo (flag \"creatività in ritardo\" registrato su campagna);\n   - campagne sospese o modificate su richiesta del cliente;\n   - campagne ancora in corso (verifica solo a flight concluso): escludi le campagne il cui flight non è terminato entro la fine del periodo coperto dal dataset.\n4) Per il calcolo considera solo i giorni con dato di erogazione valido: escludi dal calcolo sia il pianificato sia l'erogato dei giorni in cui il dato di erogazione manca o è palesemente errato (es. valori negativi). I valori impossibili di dwell time o scansioni QR (es. più scansioni che impression) NON invalidano la giornata: rendili semplicemente non disponibili.\n\nOutput richiesto:\n- elenco delle campagne con diritto a make-good con codice campagna, inserzionista, aeroporto, periodo del flight, impression pianificate, impression erogate, tasso di erogazione %, CPM contrattuale e valore del make-good in euro;\n- numero di campagne aventi diritto e valore totale del make-good in euro;\n- elenco separato delle campagne sotto il 95% ma escluse dal diritto, con il motivo dell'esclusione (creatività in ritardo / sospesa o modificata su richiesta cliente / ancora in corso);\n- un grafico a barre del valore del make-good per campagna (top 15).",
+              "ok": true,
+              "ms": 26761,
+              "charts": 1
+            }
+          ],
+          "answer": "**18 campagne hanno diritto al make-good, per un valore totale di 30.450,52 €** (2.108.051 impression non erogate, tasso di erogazione medio ponderato 89,2%). L'elenco completo con codici, inserzionisti e valori è nella tabella qui sotto.\n\nCome è stato applicato il diritto:\n- Diritto quando una campagna **conclusa** ha erogato **meno del 95%** del pianificato; il valore copre l'intera differenza tra pianificato ed erogato, con formula (impression pianificate − erogate) × CPM contrattuale / 1000 [§5.2].\n- Escluse le campagne con **creatività in ritardo**, quelle **sospese o modificate su richiesta del cliente** e quelle **ancora in corso** [§5.3; §2.6].\n- Dal calcolo sono stati tolti i giorni con dato di erogazione mancante o errato, sia dal pianificato sia dall'erogato; i valori impossibili di dwell o scansioni QR non invalidano la giornata [§6.6].\n\nPunti di attenzione:\n- Su 33 campagne sotto il 95%, **15 sono escluse**: 14 per creatività consegnate in ritardo e 1 (Velocar Auto, WM-2026-0098) anche perché ancora in corso. Il loro gap teorico è di circa 57.500 €.\n- **Nessuna esclusione per \"sospesa o modificata su richiesta cliente\" è stata rilevata**: l'export non contiene un campo di stato, quindi questo criterio non è verificabile sui dati e va confermato con Campaign Operations.\n- Il valore è concentrato: le prime tre campagne (Caffè Montano 5.382 €, Vigna Antica 4.542 €, Nordvik Outdoor 2.691 €) valgono il 41% del totale; Vigna Antica è il primo cliente con 3 campagne a diritto (7.749 €).\n- Il make-good va utilizzato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].",
+          "error": null,
+          "firstTokenMs": 34407,
+          "ms": 36160
+        }
+      ]
+    },
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 34135,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la regola esatta sul diritto al make-good, con soglie, formula ed esclusioni.",
+              "input": "make-good garanzia di erogazione: condizioni, soglie, formula di calcolo del valore e esclusioni",
+              "ok": true,
+              "ms": 377,
+              "sources": [
+                "5.2",
+                "5.3",
+                "6.6",
+                "5.4",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Recupero la scadenza di consegna creatività della sezione 2.6, richiamata dalle esclusioni del make-good.",
+              "input": "sezione 2.6 scadenza consegna creatività prima dell'inizio campagna",
+              "ok": true,
+              "ms": 327,
+              "sources": [
+                "2.6",
+                "5.3",
+                "7.3",
+                "12",
+                "6.7"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico ai dati la regola di make-good dell'handbook, con soglia, formula ed esclusioni.",
+              "input": "Individua le campagne del dataset (gen 2025 - set 2026) che hanno diritto al make-good e calcolane il valore totale.\n\nREGOLA DA APPLICARE (handbook §5.2, §5.3, §6.6):\n1) Hanno diritto al make-good le campagne CONCLUSE (flight terminato) che hanno erogato meno del 95% del pianificato. Tasso di erogazione = impression erogate / impression pianificate.\n2) Valore make-good in euro = (impression pianificate − impression erogate) × CPM contrattuale / 1000.\n3) ESCLUSIONI da applicare come filtri:\n   - campagne ancora in corso (flight non concluso): verifica solo a flight concluso. Considera concluse le campagne con data di fine flight antecedente all'ultima data disponibile nel dataset; elenca a parte quante/quali campagne sono state escluse per questo motivo.\n   - campagne con creatività consegnata in ritardo (flag \"creatività in ritardo\" registrato sulla campagna): escluse.\n   - campagne sospese o modificate su richiesta del cliente: escluse.\n4) PULIZIA DATI (§6.6): escludi dal calcolo sia dal pianificato sia dall'erogato i giorni in cui il dato di erogazione manca o è palesemente errato (es. negativo). I valori impossibili di dwell time o scansioni QR non invalidano la giornata e non vanno esclusi.\n\nOUTPUT RICHIESTO:\n- elenco delle campagne con diritto a make-good: codice campagna (es. WM-2025-0079), inserzionista, aeroporto, periodo del flight, impression pianificate, impression erogate, tasso di erogazione %, CPM contrattuale, valore make-good in euro;\n- valore totale del make-good in euro (somma);\n- conteggio e motivo delle campagne escluse (in corso, creatività in ritardo, sospese/modificate su richiesta cliente);\n- un grafico a barre del valore di make-good per campagna.",
+              "ok": true,
+              "ms": 22931,
+              "charts": 1
+            }
+          ],
+          "answer": "**18 campagne concluse hanno diritto al make-good, per un valore totale di 30.450,52 €.**\n\nLa regola applicata è quella dell'handbook: ha diritto al make-good la campagna conclusa che ha erogato meno del 95% del pianificato, con valore pari a (impression pianificate − impression erogate) × CPM contrattuale / 1000 [§5.2]. Sono escluse le campagne con creatività consegnata in ritardo, quelle sospese o modificate su richiesta del cliente e quelle ancora in corso [§5.3; §2.6]. Dal calcolo sono stati esclusi i giorni con dato di erogazione mancante o palesemente errato, sia dal pianificato sia dall'erogato [§6.6].\n\nI casi di valore più alto:\n- **WM-2026-0096** – Caffè Montano: 5.381,81 € (erogazione 91,6%, BLQ/FCO/LIN)\n- **WM-2025-0088** – Vigna Antica: 4.541,88 € (84,2%, FCO/MXP)\n- **WM-2025-0173** – Nordvik Outdoor: 2.690,76 € (88,3%, BGY/CTA/MXP)\n\nIl tasso di erogazione medio di queste campagne è intorno all'88%, quindi l'under-delivery è diffuso sull'intero flight e non concentrato su singoli giorni. L'elenco completo con codici, inserzionisti, aeroporti, periodi e valori è nella tabella sotto la risposta.\n\nEsclusioni rilevate:\n- **5 campagne ancora in corso** (flight con fine successiva al 30/09/2026): WM-2026-0019, WM-2026-0093, WM-2026-0098, WM-2026-0136, WM-2026-0162 — la verifica si fa solo a flight concluso [§5.3].\n- **14 campagne concluse con creatività consegnata in ritardo** (tra cui WM-2025-0056, WM-2025-0060, WM-2025-0070, WM-2026-0133, WM-2026-0150) [§5.3; §2.6].\n- L'esclusione delle campagne **sospese o modificate su richiesta del cliente** non è verificabile sui dati: il dataset non contiene un campo di stato o di modifica contrattuale, quindi non è stata applicata. Se serve un controllo puntuale su questo punto, va fatto sui contratti/CRM.\n\nNota operativa: il make-good va utilizzato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].",
+          "error": null,
+          "firstTokenMs": 31787,
+          "ms": 34135
+        }
+      ]
+    },
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 36417,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la regola esatta sul make-good: condizioni, soglie ed esclusioni.",
+              "input": "make-good garanzia di erogazione condizioni soglie esclusioni",
+              "ok": true,
+              "ms": 250,
+              "sources": [
+                "5.2",
+                "5.3",
+                "6.6",
+                "5.4",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Recupero la scadenza di consegna creatività della sezione 2.6, richiamata dalle esclusioni del make-good.",
+              "input": "scadenza consegna creatività sezione 2.6 termini",
+              "ok": true,
+              "ms": 263,
+              "sources": [
+                "2.6",
+                "5.3",
+                "7.3",
+                "12",
+                "2"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico la regola di make-good (§5.2) con le esclusioni (§5.3) e la pulizia dati (§6.6) al dataset campagne.",
+              "input": "Individua le campagne che hanno diritto al make-good e calcolane il valore totale, applicando la regola aziendale di seguito riportata per esteso.\n\nREGOLA (§5.2): una campagna CONCLUSA ha diritto al make-good se ha erogato meno del 95% delle impression pianificate. Il valore copre l'intera differenza: valore make-good in euro = (impression pianificate − impression erogate) × CPM contrattuale / 1000.\n\nESCLUSIONI (§5.3) — vanno escluse:\n1) campagne con creatività consegnate in ritardo (flag \"creatività in ritardo\" registrato da Campaign Operations; la scadenza è 5 giorni lavorativi prima dell'inizio del flight, §2.6);\n2) campagne sospese o modificate su richiesta del cliente;\n3) campagne ancora in corso: la verifica si fa solo a flight concluso (considera concluse solo le campagne con data di fine flight antecedente all'ultima data disponibile nel dataset).\n\nPULIZIA DATI (§6.6): per ogni campagna, escludi dal calcolo sia il pianificato sia l'erogato dei giorni in cui il dato di erogazione manca o è palesemente errato (es. negativo). I valori impossibili di dwell time o scansioni QR non invalidano la giornata e non vanno esclusi.\n\nNota: le campagne coinvolte dai lavori di VCE (12 gen – 29 mar 2026) seguono le regole ordinarie, senza trattamenti speciali.\n\nOutput richiesto:\n- elenco delle campagne con diritto a make-good: codice campagna, inserzionista, aeroporto, periodo del flight, impression pianificate ed erogate (dopo pulizia §6.6), % di erogazione, CPM contrattuale e valore del make-good in euro;\n- numero di campagne idonee e valore totale del make-good in euro;\n- per trasparenza, elenco delle campagne sotto il 95% ma escluse, con il motivo dell'esclusione (creatività in ritardo / sospesa o modificata su richiesta cliente / ancora in corso).",
+              "ok": true,
+              "ms": 27809,
+              "charts": 1
+            }
+          ],
+          "answer": "**18 campagne concluse hanno diritto al make-good, per un valore totale di 30.451 €** (30.450,54 €), su 19,59 mln di impression pianificate e 17,48 mln erogate.\n\nIl diritto nasce quando una campagna conclusa eroga meno del 95% del pianificato e il valore copre l'intera differenza tra pianificato ed erogato, al CPM contrattuale [§5.2]. Sono escluse le campagne con creatività in ritardo, quelle sospese o modificate su richiesta del cliente e quelle ancora in corso [§5.3]; il calcolo considera solo i giorni con dato di erogazione valido [§6.6].\n\nI casi più rilevanti:\n- **Caffè Montano – WM-2026-0096** (BLQ/FCO/LIN): 91,6% di erogazione, make-good 5.382 €\n- **Vigna Antica – WM-2025-0088** (FCO/MXP): 84,2%, 4.542 €\n- **Nordvik Outdoor – WM-2025-0173** (BGY/CTA/MXP): 88,3%, 2.691 €\n\nSulle 33 campagne sotto il 95%, 15 sono escluse: 14 per creatività consegnate in ritardo (es. Lumen Beauty – WM-2025-0084, Banca Meridiana – WM-2025-0137, Orologeria Castelli – WM-2026-0091) e 1 ancora in corso (Velocar Auto – WM-2026-0098, fine flight 07/10/2026, che cumula anche il ritardo creatività).\n\nDue precisazioni:\n- La terza esclusione del §5.3 (campagne sospese o modificate su richiesta del cliente) **non è verificabile** sui dati disponibili: nessuna colonna registra uno stato di sospensione o una richiesta del cliente. Le altre regole sono state applicate alla lettera.\n- Le campagne VCE coinvolte dai lavori (12 gen – 29 mar 2026) seguono le regole ordinarie, senza trattamenti speciali [§5.4].\n\nIl make-good va utilizzato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].",
+          "error": null,
+          "firstTokenMs": 34828,
+          "ms": 36417
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 27931,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la policy sugli sconti per capire quali sconti sono fuori policy e con quali condizioni/esclusioni.",
+              "input": "policy sconti listino CPM sconto massimo consentito condizioni sconti fuori policy esclusioni",
+              "ok": true,
+              "ms": 240,
+              "sources": [
+                "3.3",
+                "3",
+                "3.2",
+                "3.1",
+                "6.5"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Verifico sui dati quali contratti hanno un CPM contrattuale inferiore al 75% del listino del formato, cioè sconto oltre il tetto del 25%.",
+              "input": "Individua le campagne/contratti con sconto fuori policy, cioè con CPM contrattuale inferiore al 75% del CPM di listino del formato (sconto complessivo superiore al 25%). Regola aziendale [§3.3]: lo sconto complessivo sul listino non può mai superare il 25%; qualsiasi contratto con CPM contrattuale inferiore al 75% del listino è fuori policy.\n\nCPM di listino per formato [§3.1]: Gate Screen 18,00 €; Digital Totem 14,00 €; Lounge Screen 32,00 €; Wi-Fi Portal 9,00 €; Baggage Claim Wall 12,00 €. Il listino è unico per tutti gli aeroporti.\n\nPerimetro: tutte le campagne del dataset (gen 2025 - set 2026), tutti gli aeroporti e tutti gli inserzionisti. Considera il CPM contrattuale della campagna (CPM effettivo = spesa totale / impression erogate * 1000, oppure il CPM contrattuale presente nel dataset se disponibile; specifica quale hai usato).\n\nOutput richiesto: elenco delle campagne fuori policy con codice campagna (es. WM-2025-0079), inserzionista, formato, aeroporto/i, CPM contrattuale, CPM di listino del formato, sconto % risultante e spesa/impression erogate. Indica anche quante campagne sono fuori policy sul totale e, se utile, una tabella riepilogativa. Non includere campagne con sconto entro il 25%.",
+              "ok": true,
+              "ms": 19603,
+              "charts": 1
+            }
+          ],
+          "answer": "Sì: **7 campagne su 177 (4,0%)** hanno uno sconto complessivo superiore al tetto del 25% previsto dalla policy, quindi con CPM contrattuale sotto il 75% del listino [§3.3].\n\n| Campagna | Inserzionista | Formato | Sconto | CPM contr. vs listino |\n|---|---|---|---|---|\n| WM-2025-0079 | Linea Sartori | Gate Screen | 32% | 12,24 vs 18,00 |\n| WM-2025-0119 | Maison Verbena | Baggage Claim Wall | 32% | 8,16 vs 12,00 |\n| WM-2026-0166 | Caffè Montano | Gate Screen | 32% | 12,24 vs 18,00 |\n| WM-2026-0156 | Orizzonte Viaggi | Gate Screen | 32% | 12,24 vs 18,00 |\n| WM-2025-0176 | Dolce Alpi | Baggage Claim Wall | 30% | 8,40 vs 12,00 |\n| WM-2025-0127 | Dolce Alpi | Digital Totem | 30% | 9,80 vs 14,00 |\n| WM-2025-0022 | Soundwave Audio | Wi-Fi Portal | 29% | 6,39 vs 9,00 |\n\nContesto utile:\n- Il confronto è fatto sul CPM contrattuale del dataset, verificato identico al CPM effettivo (spesa/impression erogate × 1000), contro il listino per formato [§3.1; §3.3].\n- Valore complessivo coinvolto: 121.922,88 € di spesa (3,8% del fatturato del perimetro) e 11,4 milioni di impression su 230,6 milioni erogate.\n- Le violazioni si concentrano su Gate Screen (3 campagne) e Baggage Claim Wall (2); Dolce Alpi è l'unico inserzionista con due contratti fuori policy.\n- Tutte le campagne sono concluse (fine flight ≤ 30/09/2026): si tratta quindi di esposizione storica da sanare, non di trattative in corso. Se fossero state vendute al minimo ammesso (75% del listino), il ricavo aggiuntivo sarebbe di 11.707,03 €.\n\nNota di policy: lo sconto aggiuntivo oltre il volume è ammesso fino a 5 punti percentuali e solo con approvazione scritta dell'Head of Sales, ma il tetto complessivo del 25% resta invalicabile; i contratti sotto tale soglia vanno segnalati al Controllo di Gestione per la revisione trimestrale dei margini [§3.3].",
+          "error": null,
+          "firstTokenMs": 24901,
+          "ms": 27931
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 46312,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la policy sugli sconti per capire quali condizioni rendono uno sconto fuori policy.",
+              "input": "policy sconti listino CPM condizioni sconto massimo fuori policy",
+              "ok": true,
+              "ms": 427,
+              "sources": [
+                "3.3",
+                "3",
+                "3.2",
+                "3.1",
+                "6.5"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico ai dati la soglia del 25% massimo di sconto sul listino per trovare i contratti fuori policy.",
+              "input": "Individua i contratti/campagne con sconto fuori policy nel dataset campagne (gen 2025 - set 2026) e elencali.\n\nRegola da applicare (Handbook §3.3): lo sconto complessivo sul listino non può mai superare il 25%; quindi qualsiasi contratto con CPM contrattuale inferiore al 75% del CPM di listino del formato è fuori policy (anche se approvato) e va segnalato. Calcola per ogni campagna lo sconto percentuale implicito = 1 - (CPM contrattuale / CPM di listino del formato), con questi CPM di listino per formato (Handbook §3.1): Gate Screen 18,00 €; Digital Totem 14,00 €; Lounge Screen 32,00 €; Wi-Fi Portal 9,00 €; Baggage Claim Wall 12,00 €.\n\nAttenzione al perimetro: il confronto va fatto per formato, perché il listino dipende dal formato. Se una campagna ha più formati, valuta ogni riga campagna+formato e segnala la campagna se almeno una riga ha CPM contrattuale < 75% del listino del suo formato. Escludi dal confronto le eventuali righe/campagne prive di CPM contrattuale o di formato valorizzato.\n\nOutput richiesto: elenco delle campagne fuori policy con codice campagna, inserzionista, formato/i coinvolti, CPM contrattuale, CPM di listino, sconto % implicito; più il numero totale di campagne fuori policy e il numero totale di campagne nel dataset, e una tabella riepilogativa ordinata per sconto % decrescente.",
+              "ok": true,
+              "ms": 15468,
+              "charts": 1
+            },
+            {
+              "tool": "data",
+              "motivo": "Chiedo l'elenco esplicito con i codici campagna delle 7 posizioni fuori policy, per poterle citare correttamente.",
+              "input": "Riprendi l'analisi precedente sugli sconti fuori policy (gen 2025 - set 2026) e restituisci l'elenco puntuale delle campagne fuori policy con, per ciascuna: codice campagna (es. WM-2025-0079), inserzionista, formato, CPM contrattuale, CPM di listino del formato e sconto % implicito. Regola: fuori policy se CPM contrattuale < 75% del listino del formato (listini: Gate Screen 18,00 €; Digital Totem 14,00 €; Lounge Screen 32,00 €; Wi-Fi Portal 9,00 €; Baggage Claim Wall 12,00 €). Fornisci solo l'elenco con i codici, senza commenti.",
+              "ok": true,
+              "ms": 19324,
+              "charts": 0
+            }
+          ],
+          "answer": "Sì: **7 campagne su 177** risultano fuori policy nel periodo gen 2025 – set 2026, con sconti impliciti tra il 29% e il 32% (il tetto massimo è il 25%):\n\n- **WM-2025-0022** – Soundwave Audio, Wi-Fi Portal, 6,39 € vs 9,00 € di listino (29%)\n- **WM-2025-0079** – Linea Sartori, Gate Screen, 12,24 € vs 18,00 € (32%)\n- **WM-2025-0119** – Maison Verbena, Baggage Claim Wall, 8,16 € vs 12,00 € (32%)\n- **WM-2025-0127** – Dolce Alpi, Digital Totem, 9,80 € vs 14,00 € (30%)\n- **WM-2025-0176** – Dolce Alpi, Baggage Claim Wall, 8,40 € vs 12,00 € (30%)\n- **WM-2026-0156** – Orizzonte Viaggi, Gate Screen, 12,24 € vs 18,00 € (32%)\n- **WM-2026-0166** – Caffè Montano, Gate Screen, 12,24 € vs 18,00 € (32%)\n\nIl criterio applicato è quello dell'handbook: lo sconto complessivo sul listino non può mai superare il 25%, quindi qualsiasi contratto con CPM contrattuale inferiore al 75% del listino del formato è fuori policy anche se approvato e va segnalato al Controllo di Gestione per la revisione trimestrale dei margini [§3.3], con i CPM di listino per formato [§3.1]. Il confronto è stato fatto riga per formato; le restanti 170 campagne sono entro i limiti.\n\nNota di contesto: lo sconto volume massimo \"regolare\" è il 20% (da 6 milioni di impression pianificate), a cui si possono aggiungere al massimo 5 punti percentuali con approvazione scritta dell'Head of Sales [§3.2; §3.3]. Vale la pena verificare che le approvazioni extra-policy di questi sette contratti siano documentate.",
+          "error": null,
+          "firstTokenMs": 44480,
+          "ms": 46312
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 23043,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la policy sugli sconti per capire quali sono fuori norma.",
+              "input": "policy sconti commerciali soglie massime sconto ammesso condizioni ed esclusioni",
+              "ok": true,
+              "ms": 370,
+              "sources": [
+                "3.3",
+                "3.2",
+                "1.1",
+                "3",
+                "7.1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Recupero il listino CPM di riferimento per confrontarlo con i CPM contrattuali.",
+              "input": "listino CPM per formato e aeroporto prezzi di listino 2025 2026",
+              "ok": true,
+              "ms": 456,
+              "sources": [
+                "3.1",
+                "3",
+                "6.5",
+                "12",
+                "1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Verifico quali campagne hanno un CPM contrattuale sotto il 75% del listino del formato.",
+              "input": "Individua tutte le campagne con CPM contrattuale fuori policy, cioè con CPM contrattuale inferiore al 75% del CPM di listino del formato di riferimento (sconto complessivo superiore al 25%).\n\nRegola di business (handbook §3.3): lo sconto complessivo sul listino non può mai superare il 25%; qualsiasi contratto con CPM contrattuale inferiore al 75% del listino è fuori policy.\n\nListino CPM per formato (handbook §3.1), unico per tutti gli aeroporti:\n- Gate Screen: 18,00 €\n- Digital Totem: 14,00 €\n- Lounge Screen: 32,00 €\n- Wi-Fi Portal: 9,00 €\n- Baggage Claim Wall: 12,00 €\n\nCompito:\n1) Per ogni campagna (codice campagna, es. WM-2025-0079, e inserzionista) calcola il CPM contrattuale e confrontalo con la soglia del 75% del listino del suo formato. Considera il CPM contrattuale come il CPM della campagna nel dataset (se il dataset riporta più righe per campagna/formato, usa il CPM contrattuale della campagna, non il CPM effettivo calcolato come spesa/impression erogate).\n2) Elenca tutte le campagne fuori policy con: codice campagna, inserzionista, formato, CPM contrattuale, CPM di listino, soglia 75%, sconto percentuale implicito rispetto al listino, periodo/flight e aeroporto.\n3) Indica quante campagne sono fuori policy sul totale delle campagne presenti nel dataset e, se utile, una tabella riepilogativa per formato e per inserzionista.\n4) Segnala eventuali casi dubbi o dati mancanti (es. formati non presenti nel listino, CPM mancanti).\n\nPeriodo: intero dataset disponibile (gen 2025 - set 2026).",
+              "ok": true,
+              "ms": 12924,
+              "charts": 1
+            }
+          ],
+          "answer": "Sì: **7 campagne su 177** (4,0%) hanno un CPM contrattuale fuori policy, cioè inferiore al 75% del listino di formato, con sconti impliciti tra il 29% e il 32% a fronte del tetto massimo del 25% [§3.3].\n\n**Le campagne fuori policy**\n\n| Campagna | Inserzionista | Formato | CPM contrattuale vs listino | Sconto |\n|---|---|---|---|---|\n| WM-2025-0079 | Linea Sartori | Gate Screen | 12,24 € vs 18,00 € | 32% |\n| WM-2025-0119 | Maison Verbena | Baggage Claim Wall | 8,16 € vs 12,00 € | 32% |\n| WM-2026-0166 | Caffè Montano | Gate Screen | — | 32% |\n| WM-2026-0156 | Orizzonte Viaggi | Gate Screen | — | 32% |\n| WM-2025-0176 | Dolce Alpi | Baggage Claim Wall | — | 30% |\n| WM-2025-0127 | Dolce Alpi | Digital Totem | — | 30% |\n| WM-2025-0022 | Soundwave Audio | Wi-Fi Portal | 6,39 € vs 9,00 € | 29% |\n\n**Contesto**\n- Per formato l'anomalia è concentrata su Gate Screen (3 campagne) e Baggage Claim Wall (2); per inserzionista spicca Dolce Alpi con 2 campagne, gli altri cinque ne hanno una ciascuno.\n- Il riferimento è il listino unico di rete: Gate Screen 18,00 €, Digital Totem 14,00 €, Lounge Screen 32,00 €, Wi-Fi Portal 9,00 €, Baggage Claim Wall 12,00 € [§3.1]. Lo sconto volume massimo applicabile è il 20% (da 6 milioni di impression pianificate) e l'eventuale sconto aggiuntivo non può superare i 5 punti percentuali, solo con approvazione scritta dell'Head of Sales [§3.2; §3.3].\n- Nessun dato dubbio: tutti i formati sono a listino, nessun CPM mancante e le 5 campagne ancora in corso al 30/09/2026 non sono coinvolte.\n- Poiché il CPM contrattuale è anche la base di fatturazione e dei make-good [§3.3], per queste 7 campagne va richiesta una deroga formale o la rinegoziazione del CPM, con priorità sui contratti al 32%.",
+          "error": null,
+          "firstTokenMs": 20820,
+          "ms": 23043
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 47994,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco eventuali esclusioni o regole specifiche per interruzioni/lavori in aeroporto.",
+              "input": "lavori in aeroporto, interruzioni erogazione, cause di forza maggiore, esclusioni make-good",
+              "ok": true,
+              "ms": 314,
+              "sources": [
+                "5.4",
+                "12",
+                "5.2",
+                "5.3",
+                "1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le regole su garanzia di erogazione e make-good, con condizioni ed esclusioni.",
+              "input": "garanzia di erogazione e make-good: condizioni, soglie, calcolo e esclusioni",
+              "ok": true,
+              "ms": 359,
+              "sources": [
+                "5.2",
+                "6.6",
+                "5.3",
+                "5.1",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Verifico l'erogazione delle campagne a Venezia durante i lavori e calcolo l'eventuale make-good spettante.",
+              "input": "Analizza le campagne che hanno erogato sull'aeroporto di Venezia (VCE) nel periodo dei lavori 12 gennaio - 29 marzo 2026 (considera le campagne il cui flight si sovrappone a questo intervallo).\n\nPer ciascuna campagna coinvolta riporta: codice campagna (es. WM-2025-0079), inserzionista, data inizio e fine flight, impression pianificate, impression erogate, percentuale di erogazione (erogate/pianificate) e CPM contrattuale.\n\nPoi applica la regola di make-good dell'handbook §5.2: se una campagna CONCLUSa (data di fine flight già passata, quindi non ancora in corso) ha erogato meno del 95% del pianificato, il make-good vale (impression pianificate − impression erogate) × CPM contrattuale / 1000 euro. Calcola questo valore per ogni campagna che ne ha diritto e il totale complessivo.\n\nEsclusioni da applicare (§5.3): escludi le campagne con creatività consegnate in ritardo rispetto alla scadenza, le campagne sospese o modificate su richiesta del cliente, e le campagne ancora in corso (verifica solo a flight concluso). Segnala esplicitamente quali campagne sono state escluse e per quale motivo.\n\nNota metodologica (§6.6): escludi dal calcolo sia dal pianificato sia dall'erogato i giorni con dato di erogazione mancante o palesemente errato (es. valori negativi); i valori impossibili di dwell time o scansioni QR non invalidano la giornata.\n\nMostra anche un grafico dell'andamento settimanale di impression pianificate vs erogate a VCE nel periodo gennaio-marzo 2026, per evidenziare il calo durante i lavori.",
+              "ok": true,
+              "ms": 37279,
+              "charts": 2
+            }
+          ],
+          "answer": "Sì, l'erogazione a Venezia è calata durante i lavori, e a tre campagne su quattro coinvolte spetta un make-good.\n\n**Il calo**\nA VCE il tasso di erogazione è sceso dal 97,4% della settimana del 5/01/2026 al **75,5% nel periodo dei lavori** (12/01–29/03/2026), con minimi del 72,3% a fine marzo, contro il 98,6% del periodo pre-lavori (set–nov 2025). È esattamente lo scenario previsto dall'avviso operativo: durante i lavori parte degli schermi è stata spenta a rotazione e l'erogazione è risultata inferiore al pianificato, ma le campagne seguono le regole ordinarie [§5.4].\n\n**Chi ha diritto al make-good**\nLa garanzia è del 95% delle impression pianificate, verificata a livello di campagna e solo a flight concluso [§5.1]; sotto quella soglia il make-good copre l'intera differenza, con formula (pianificate − erogate) × CPM / 1000 [§5.2]. Applicando la regola:\n\n- **WM-2026-0156 – Orizzonte Viaggi**: 84,1% erogato → make-good **830,37 €**\n- **WM-2026-0128 – Essenza Profumi**: 84,9% erogato → make-good **387,30 €**\n- **WM-2026-0021 – Vigna Antica**: 90,3% erogato → make-good **344,84 €**\n\nTotale su VCE: **1.562,51 €** (142.804 impression non erogate). Considerando l'intero flight su tutti gli aeroporti, il make-good complessivo delle campagne coinvolte sale a **3.407,81 €**.\n\n**Esclusa**\n**WM-2025-0060 – Vigna Antica** (21/12–24/01) è la più critica (75,1% di erogazione a VCE) ma **non dà diritto a make-good**: la creatività è stata consegnata in ritardo, caso espressamente escluso [§5.3]. Sarebbero stati 1.521,96 € su VCE.\n\n**Note e limiti**\n- Le percentuali sono calcolate al netto dei giorni con dato di erogazione mancante o negativo [§6.6].\n- Nessuna delle campagne è ancora in corso, quindi l'esclusione per flight non concluso non si applica [§5.3].\n- Non è verificabile con i dati disponibili l'eventuale esclusione per \"campagne sospese o modificate su richiesta del cliente\" (manca un campo di stato): va confermato con Campaign Operations prima di formalizzare gli importi.\n- Il make-good va usato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].\n\nOperativamente, conviene accantonare circa 1.560 € sui tre inserzionisti e gestire il residuo con estensione o riallocazione su altri scali, evitando impegni di volume su VCE finché i lavori non sono chiusi (dal 30/03/2026 l'inventario è tornato pienamente operativo [§5.4]).",
+          "error": null,
+          "firstTokenMs": 44371,
+          "ms": 47994
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 27792,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico se l'handbook prevede cause di esclusione dal make-good come cantieri o lavori negli aeroporti.",
+              "input": "lavori cantieri aeroporto esclusione responsabilità make-good forza maggiore",
+              "ok": true,
+              "ms": 341,
+              "sources": [
+                "12",
+                "5.4",
+                "5.3",
+                "5.2",
+                "1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le regole sulla garanzia di erogazione e i make-good, incluse le esclusioni (es. lavori/inagibilità degli spazi).",
+              "input": "garanzia di erogazione e make-good: condizioni, soglie, calcolo e casi di esclusione (lavori, inagibilità spazi)",
+              "ok": true,
+              "ms": 377,
+              "sources": [
+                "5.2",
+                "6.6",
+                "5.3",
+                "5.4",
+                "5.1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Analizzo l'erogazione a Venezia durante i lavori (12 gen–29 mar 2026) e verifico quali campagne concluse scendono sotto il 95%, applicando le regole ed esclusioni del make-good.",
+              "input": "Analisi sul dataset campagne Wayfare Media (gen 2025 – set 2026). Obiettivo: valutare l'effetto dei lavori al terminal di Venezia Marco Polo (VCE) sull'erogazione e calcolare il make-good spettante.\n\nPARTE A — Andamento erogazione a VCE\nConsidera solo le righe dell'aeroporto VCE. Confronta il tasso di erogazione (impression erogate / impression pianificate) nel periodo lavori 12/01/2026–29/03/2026 rispetto a: (a) il periodo precedente 01/10/2025–11/01/2026 e (b) il periodo successivo 30/03/2026–30/06/2026. Riporta per ciascun periodo: impression pianificate, erogate, tasso di erogazione. Se utile, mostra anche un grafico mensile del tasso di erogazione a VCE da ottobre 2025 a giugno 2026.\n\nPARTE B — Campagne coinvolte e verifica make-good\nIndividua le campagne che hanno avuto erogazione a VCE durante il periodo lavori 12/01/2026–29/03/2026 (una campagna è coinvolta se il suo flight si sovrappone a tale intervallo e ha righe su VCE). Per ognuna riporta: codice campagna (formato WM-AAAA-NNNN), inserzionista, data inizio e fine flight, CPM contrattuale, impression pianificate ed erogate su VCE nel periodo lavori e tasso di erogazione su VCE nel periodo lavori.\n\nPoi applica la regola di garanzia dell'handbook §5.1/§5.2: la verifica si fa A LIVELLO DI CAMPAGNA, sommando tutti gli aeroporti e tutti i giorni del flight, e solo per campagne concluse (data di fine flight antecedente l'ultima data presente nel dataset). Una campagna ha diritto al make-good se l'erogazione complessiva di campagna è inferiore al 95% del pianificato. Il valore del make-good in euro = (impression pianificate − impression erogate) × CPM contrattuale / 1000.\n\nEsclusioni da applicare (§5.3): escludi (1) campagne con creatività consegnate in ritardo rispetto alla scadenza; (2) campagne sospese o modificate su richiesta del cliente; (3) campagne ancora in corso a fine dataset. Per il calcolo considera solo i giorni con dato di erogazione valido (§6.6): escludi dal pianificato e dall'erogato le giornate con dato di erogazione mancante o palesemente errato (es. negativo); i valori impossibili di dwell time o scansioni QR non invalidano la giornata.\n\nOutput atteso: tabella delle campagne coinvolte a VCE con tasso di erogazione complessivo di campagna, flag di ammissibilità al make-good (con motivo di eventuale esclusione) e valore del make-good in euro. Riporta il totale del make-good spettante. Indica per ciascuna campagna se il dato di fine flight è concluso o in corso.",
+              "ok": true,
+              "ms": 15219,
+              "charts": 1
+            }
+          ],
+          "answer": "**Sì, l'erogazione a Venezia è calata netta, e a 3 delle 4 campagne coinvolte spetta il make-good.**\n\n**Andamento a VCE.** Durante i lavori (12/01–29/03/2026) il tasso di erogazione è sceso al **75,5%** (611.090 impression erogate su 808.904 pianificate), contro il 97,3% del periodo precedente (01/10/2025–11/01/2026) e l'89,2% di quello successivo (30/03–30/06/2026). Il calo è concentrato nei mesi dei lavori (gen 83,1%, feb 80,2%, mar 75,2%); l'inventario risulta pienamente operativo dal 30 marzo 2026, con aprile già al 97,8% [§5.4].\n\n**Chi ha diritto al make-good.** La garanzia è del 95% delle impression pianificate e si verifica a livello di campagna, sommando tutti gli aeroporti e tutti i giorni del flight, solo a flight concluso [§5.1]. Il make-good copre l'intera differenza tra pianificato ed erogato, valorizzata al CPM contrattuale: (pianificate − erogate) × CPM / 1000 [§5.2].\n\nCampagne coinvolte a VCE e verifica:\n\n| Campagna | Inserzionista | Erogazione campagna | Make-good |\n|---|---|---|---|\n| WM-2026-0156 | Orizzonte Viaggi | 91,2% | 861,54 € |\n| WM-2026-0021 | Vigna Antica | 94,2% | 637,01 € |\n| WM-2026-0128 | Essenza Profumi | 84,9% | 387,31 € |\n| WM-2025-0060 | Vigna Antica | 75,1% | esclusa |\n\n**Totale make-good spettante: 1.885,85 €.**\n\n**Esclusioni.** WM-2025-0060 (Vigna Antica) non dà diritto al make-good pur essendo al 75,1%, perché la creatività è stata consegnata in ritardo rispetto alla scadenza prevista [§5.3]. Nessuna campagna è esclusa in quanto ancora in corso: tutte e quattro risultano concluse. L'esclusione per campagne sospese o modificate su richiesta del cliente [§5.3] non è verificabile con i dati disponibili, non essendo presente un campo di stato: va confermata con il cliente prima di formalizzare il make-good.\n\n**Note operative.** Il make-good è erogato come impression gratuite in un flight successivo, non è convertibile in denaro e va utilizzato entro 6 mesi dalla fine della campagna [§5.2]. Nel calcolo sono stati considerati solo i giorni con dato di erogazione valido, escludendo le giornate con dato mancante o palesemente errato [§6.6].\n\nSegnalo inoltre che a maggio–giugno 2026 il tasso a VCE resta sotto il 90%: se il cliente WM-2025-0060 contesta l'esclusione, quel dato può essere utile in una trattativa commerciale, ma il make-good contrattuale non spetta.",
+          "error": null,
+          "firstTokenMs": 25238,
+          "ms": 27792
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 51093,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco eventuali regole specifiche su interruzioni o lavori negli aeroporti e relativi rimborsi o make-good.",
+              "input": "lavori o interruzioni in aeroporto: impatto sull'erogazione, obblighi verso i clienti, esclusioni dalla garanzia",
+              "ok": true,
+              "ms": 341,
+              "sources": [
+                "12",
+                "5.1",
+                "1",
+                "1",
+                "5.4"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le regole su garanzia di erogazione e make-good, incluse le esclusioni (es. lavori/interruzioni programmate).",
+              "input": "garanzia di erogazione e make-good: condizioni, soglie, calcolo e esclusioni (lavori, cause di forza maggiore)",
+              "ok": true,
+              "ms": 483,
+              "sources": [
+                "5.2",
+                "5.3",
+                "6.6",
+                "5.4",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Verifico sui dati l'erogazione delle campagne a Venezia durante i lavori e quali hanno diritto al make-good secondo le regole dell'handbook.",
+              "input": "Analisi delle campagne Wayfare Media con erogazione sull'aeroporto di Venezia Marco Polo (VCE) nel periodo dei lavori: dal 12 gennaio 2026 al 29 marzo 2026 (estremi inclusi).\n\nObiettivo 1 — Andamento dell'erogazione: calcola per VCE, mese per mese (gennaio, febbraio, marzo 2026) e complessivamente nel periodo dei lavori, il totale delle impression pianificate e delle impression erogate e la percentuale di erogazione (erogate/pianificate). Confronta con un periodo di riferimento pre-lavori (es. ottobre-dicembre 2025) e con il periodo post-lavori (dal 30 marzo 2026 in poi, se presente nel dataset), per mostrare se l'erogazione a VCE è calata durante i lavori. Genera un grafico dell'andamento mensile della percentuale di erogazione a VCE.\n\nObiettivo 2 — Make-good per le campagne coinvolte: considera le campagne che hanno erogato a VCE nel periodo 12/01/2026-29/03/2026. Applica le regole dell'handbook:\n- §5.1: la garanzia è del 95% delle impression pianificate, verificata a livello di campagna (sommando tutti gli aeroporti e tutti i giorni del flight), e SOLO a campagna conclusa (data di fine flight già passata). Quindi escludi le campagne ancora in corso.\n- §5.2: se una campagna conclusa ha erogato meno del 95% del pianificato, il make-good vale (impression pianificate − impression erogate) × CPM contrattuale / 1000, in euro. Calcola questo valore per ogni campagna che ne ha diritto.\n- §5.3 esclusioni: NON danno diritto a make-good le campagne con creatività consegnate in ritardo rispetto alla scadenza, le campagne sospese o modificate su richiesta del cliente, e le campagne ancora in corso. Applica queste esclusioni se il dataset contiene i relativi flag/campi; se non li contiene, segnalalo esplicitamente.\n- §6.6: escludi dal calcolo (sia dal pianificato sia dall'erogato) i giorni con dato di erogazione mancante o palesemente errato (es. valori negativi). I valori impossibili di dwell time o scansioni QR non invalidano la giornata.\n\nOutput richiesto: elenco delle campagne coinvolte con codice campagna (es. WM-2025-0079), inserzionista, periodo di flight, impression pianificate ed erogate totali di campagna, % di erogazione, CPM contrattuale, se è conclusa o in corso, se è esclusa dal make-good e per quale motivo, e valore del make-good in euro. Aggiungi il totale del valore make-good spettante.",
+              "ok": true,
+              "ms": 41930,
+              "charts": 1
+            }
+          ],
+          "answer": "Sì, l'erogazione a Venezia è calata in modo netto durante i lavori, e a tre campagne su quattro spetta il make-good.\n\n**Andamento dell'erogazione a VCE**\n- Periodo lavori (12/01–29/03/2026): 611.090 impression erogate su 808.904 pianificate = **75,55%**\n- Pre-lavori (ott–dic 2025): 97,31% (−21,76 punti)\n- Post-lavori (dal 30/03/2026): 93,94%\n- Dettaglio mensile: gennaio 83,13%, febbraio 80,20%, marzo 75,18%\n\n**Make-good spettante**\nLe campagne coinvolte a VCE nel periodo sono 4, tutte concluse. Applicando la garanzia del 95% verificata a livello di campagna [§5.1] e la formula (pianificate − erogate) × CPM / 1000 [§5.2]:\n\n| Campagna | Inserzionista | Erogazione | Make-good |\n|---|---|---|---|\n| WM-2026-0156 | Orizzonte Viaggi | 91,22% | 861,54 € |\n| WM-2026-0021 | Vigna Antica | 94,17% | 637,01 € |\n| WM-2026-0128 | Essenza Profumi | 84,94% | 387,31 € |\n| WM-2025-0060 | Vigna Antica | 75,06% | esclusa |\n\n**Totale make-good: 1.885,86 €**\n\nWM-2025-0060, pur essendo la più sotto-erogata, non dà diritto al make-good perché la creatività è stata consegnata in ritardo [§5.3] (valore potenziale non riconosciuto: 1.521,96 €).\n\nDue note di metodo: il calcolo è già al netto delle giornate con dato di erogazione mancante o errato [§6.6], e le campagne ancora in corso sono state escluse dalla verifica [§5.3]. Il dataset non contiene invece alcun campo di stato/sospensione, quindi l'esclusione per \"campagne sospese o modificate su richiesta del cliente\" [§5.3] non è verificabile con i dati disponibili: se avete notizia di sospensioni su queste campagne, va confermato prima di riconoscere il make-good.\n\nI lavori a VCE si sono chiusi il 29 marzo 2026 e l'inventario è tornato pienamente operativo dal 30 marzo [§5.4]; il make-good va utilizzato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].",
+          "error": null,
+          "firstTokenMs": 49010,
+          "ms": 51093
+        }
+      ]
+    }
+  ]
+}

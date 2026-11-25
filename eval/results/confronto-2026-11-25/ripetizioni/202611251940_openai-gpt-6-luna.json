@@ -1,0 +1,592 @@
+{
+  "summary": {
+    "data": "2026-11-25T19:40:03.062Z",
+    "modello": "openai/gpt-6-luna",
+    "casi": 9,
+    "superati": 7,
+    "percorso_corretto": 9,
+    "percorso_ottimale": 9,
+    "errori": 0,
+    "tempo_mediano_s": 21.664,
+    "tempo_p90_s": 46.781,
+    "costo_usd": 0.017
+  },
+  "results": [
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 18420,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco la policy make-good, incluse soglie, calcolo del valore ed esclusioni, per applicarla alle campagne.",
+              "input": "Policy make-good per campagne: condizioni e soglie di eleggibilità, formula e valore del make-good, perimetro di calcolo, esclusioni e casi non idonei, garanzia di erogazione.",
+              "ok": true,
+              "ms": 327,
+              "sources": [
+                "5.2",
+                "5.3",
+                "5.1",
+                "5.4",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Verifico le campagne concluse sotto la soglia di erogazione e calcolo il valore make-good applicando tutte le esclusioni della policy.",
+              "input": "Individua nel dataset (gennaio 2025–settembre 2026) tutte le campagne concluse, cioè con data di fine flight passata rispetto alla data di osservazione del dataset, che hanno erogato meno del 95% delle impression pianificate. La verifica è a livello di campagna complessiva, sommando aeroporti e giorni del flight, usando solo i giorni con dato di erogazione valido. Escludi dal diritto al make-good le campagne con creatività consegnate in ritardo rispetto alla scadenza prevista, le campagne sospese o modificate su richiesta del cliente, e quelle ancora in corso. Per ciascuna campagna idonea restituisci codice campagna e inserzionista, pianificate, erogate valide, percentuale di erogazione e valore make-good in euro calcolato come (impression pianificate − impression erogate valide) × CPM contrattuale / 1000. Indica anche il valore complessivo in euro. Applica la policy: make-good se erogazione <95%; escludi le tre categorie indicate.",
+              "ok": true,
+              "ms": 10941,
+              "charts": 0
+            }
+          ],
+          "answer": "**18 campagne candidate** hanno erogato meno del 95% del pianificato; il valore make-good calcolato è **30.450,52 €**. La policy riconosce il make-good alle campagne concluse sotto soglia e ne calcola il valore sulla differenza tra impression pianificate ed erogate [§5.1; §5.2].\n\nIl totale è **provvisorio**: l’analisi non ha potuto verificare se alcune campagne siano state sospese o modificate su richiesta del cliente, casi esclusi dalla policy [§5.3]. I codici e gli inserzionisti delle campagne candidate sono nella tabella qui sotto.",
+          "error": null,
+          "firstTokenMs": 17710,
+          "ms": 18420
+        }
+      ]
+    },
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 21454,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco la policy make-good, incluse formule, soglie e esclusioni da applicare alle campagne.",
+              "input": "Policy garanzia di erogazione e make-good: condizioni di eleggibilità, formule per il calcolo, soglie, perimetro, esclusioni e trattamento del valore economico delle campagne.",
+              "ok": true,
+              "ms": 322,
+              "sources": [
+                "5.2",
+                "5.3",
+                "5.1",
+                "5.4",
+                "6.6"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Verifico le campagne concluse sotto soglia ed escludo i casi non eleggibili secondo la policy make-good.",
+              "input": "Individua nel dataset delle campagne Wayfare Media dal gennaio 2025 a settembre 2026 tutte le campagne che, alla data di fine flight passata, hanno diritto a make-good applicando integralmente la policy [§5.1; §5.2; §5.3; §6.6]: verifica a livello di singola campagna sommando tutti gli aeroporti e i giorni del flight; considera solo i giorni con dato di erogazione valido ed escludi per quei giorni sia le impression pianificate sia quelle erogate se il dato di erogazione manca o è palesemente errato; la campagna è eleggibile solo se erogato valido <95% del pianificato valido; escludi campagne ancora in corso, campagne con creatività consegnate in ritardo e campagne sospese o modificate su richiesta del cliente. Per ogni eleggibile riporta codice campagna, inserzionista, impression pianificate ed erogate considerate, CPM contrattuale e valore make-good in euro calcolato come (pianificate valide − erogate valide) × CPM contrattuale / 1000. Riporta anche il valore totale in euro. Non applicare esclusioni diverse da quelle indicate dalla policy.",
+              "ok": true,
+              "ms": 13360,
+              "charts": 0
+            }
+          ],
+          "answer": "L’analisi individua **18 campagne potenzialmente eleggibili**, per un valore make-good complessivo di **30.450,52 €**. La verifica applica la soglia del 95%, il calcolo sul deficit di impression e l’esclusione delle campagne ancora in corso o con creatività consegnate in ritardo [§5.1; §5.2; §5.3; §6.6].\n\n**Il totale è provvisorio:** i dati disponibili non permettono di verificare se alcune campagne siano state sospese o modificate su richiesta del cliente, circostanza che le escluderebbe dal make-good [§5.3]. L’elenco e il totale vanno quindi confermati su questo punto prima di autorizzare i make-good.",
+          "error": null,
+          "firstTokenMs": 20640,
+          "ms": 21454
+        }
+      ]
+    },
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 19945,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico le condizioni e le esclusioni della policy make-good prima di applicarla alle campagne.",
+              "input": "Policy make-good: soglie di sotto-erogazione, formula di calcolo del credito o impression compensative, perimetro e tutte le esclusioni per campagne che hanno diritto a make-good.",
+              "ok": true,
+              "ms": 347,
+              "sources": [
+                "5.2",
+                "5.3",
+                "5.4",
+                "6.6",
+                "5.1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico le soglie e le esclusioni del handbook alle campagne concluse e calcolo il valore totale del make-good.",
+              "input": "Individua tutte le campagne del dataset Wayfare Media (gennaio 2025-settembre 2026) che hanno diritto a make-good e calcola il valore make-good totale in euro. Applicare la policy: valutare a livello di campagna, sommando tutti gli aeroporti e i giorni del flight; considerare solo campagne concluse (data di fine flight passata) con impression erogate inferiori al 95% delle pianificate. Escludere dal pianificato e dall'erogato i giorni con dato di erogazione mancante o palesemente errato. Valore per campagna = (impression pianificate valide − impression erogate valide) × CPM contrattuale / 1000. Escludere le campagne con creatività consegnate in ritardo rispetto alla scadenza, le campagne sospese o modificate su richiesta del cliente, e quelle ancora in corso. Elenca per ciascuna campagna il codice contrattuale e l'inserzionista, il rapporto di erogazione e il valore make-good; indica anche il totale complessivo. Non inferire cause.",
+              "ok": true,
+              "ms": 12683,
+              "charts": 0
+            }
+          ],
+          "answer": "**18 campagne** risultano sotto il 95% di erogazione e totalizzano **30.450,52 €** di make-good. La policy riconosce il make-good alle campagne concluse sotto soglia e calcola il valore sulla differenza tra impression pianificate ed erogate, al CPM contrattuale [§5.1; §5.2].\n\nSono state escluse le campagne con creatività consegnate in ritardo. I dati disponibili non permettono però di verificare se alcune campagne siano state sospese o modificate su richiesta del cliente: il totale è quindi **soggetto a verifica di questa esclusione** [§5.3]. I dettagli sono nella tabella mostrata sopra.",
+          "error": null,
+          "firstTokenMs": 19164,
+          "ms": 19945
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 17255,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico la policy sconti e le relative soglie, condizioni ed esclusioni prima di controllare i contratti.",
+              "input": "Policy sconti commerciali: sconto massimo consentito e condizioni per eccezioni, per tipo di formato, periodo, cliente o contratto; esclusioni e come identificare uno sconto fuori policy nel listino CPM.",
+              "ok": true,
+              "ms": 308,
+              "sources": [
+                "3.3",
+                "3",
+                "3.2",
+                "1.1",
+                "6.5"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Confronto il CPM contrattuale di ogni contratto con la soglia minima del 75% del listino prevista dalla policy.",
+              "input": "Individua ed elenca tutti i contratti del dataset Wayfare Media con sconto fuori policy, riportando per ciascuno codice contratto, inserzionista e sconto percentuale sul listino. Applica la regola handbook §3.3: un contratto è fuori policy se il CPM contrattuale indicato nell'ordine di inserzione è inferiore al 75% del CPM di listino, equivalente a uno sconto complessivo superiore al 25%. La soglia vale anche se il contratto è approvato. Confronta per ogni contratto il CPM contrattuale con il CPM di listino corrispondente e calcola lo sconto come (1 - CPM contrattuale / CPM listino) × 100. Considera l'intero dataset disponibile, senza filtrare periodo o aeroporti; non inferire approvazioni mancanti.",
+              "ok": true,
+              "ms": 8852,
+              "charts": 0
+            }
+          ],
+          "answer": "Sono **7 i contratti fuori policy**: lo sconto supera il limite del 25% sul listino [§3.3].\n\n- **WM-2025-0022** — Soundwave Audio: **29%**\n- **WM-2025-0079** — Linea Sartori: **32%**\n- **WM-2025-0119** — Maison Verbena: **32%**\n- **WM-2025-0127** — Dolce Alpi: **30%**\n- **WM-2025-0176** — Dolce Alpi: **30%**\n- **WM-2026-0156** — Orizzonte Viaggi: **32%**\n- **WM-2026-0166** — Caffè Montano: **32%**\n\nLa soglia si applica anche in presenza di approvazione [§3.3].",
+          "error": null,
+          "firstTokenMs": 17134,
+          "ms": 17255
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": false,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": false,
+          "detail": ""
+        }
+      ],
+      "ok": false,
+      "ms": 21664,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico la policy aziendale sugli sconti e tutte le condizioni o esclusioni prima di controllare i contratti.",
+              "input": "Policy sconti commerciali: limiti di sconto consentiti, soglie, approvazioni necessarie ed esclusioni applicabili ai contratti/campagne; definizione di sconto fuori policy e campi dati da usare per verificarlo.",
+              "ok": true,
+              "ms": 285,
+              "sources": [
+                "3.3",
+                "3.2",
+                "1.1",
+                "5.3",
+                "3"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Controllo se la policy prevede eccezioni o esclusioni specifiche per identificare correttamente i contratti fuori soglia.",
+              "input": "Sconti commerciali: tutte le esclusioni, eccezioni e deroghe alla soglia massima del 25%, inclusi contratti non confrontabili, approvazioni scritte e trattamento di CPM/listino; definizione esatta dei contratti da segnalare come fuori policy.",
+              "ok": true,
+              "ms": 369,
+              "sources": [
+                "3.3",
+                "1.1",
+                "3",
+                "3.2",
+                "5.3"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Confronto per ogni contratto il CPM contrattuale con il 75% del listino, applicando la soglia fuori policy dell’handbook.",
+              "input": "Identifica ed elenca tutti i contratti/campagne nel dataset con CPM contrattuale inferiore al 75% del rispettivo CPM di listino, cioè sconto complessivo sul listino superiore al 25%, criterio che resta valido anche in presenza di approvazione. Considera tutti i dati disponibili da gennaio 2025 a settembre 2026, senza filtri di aeroporto, formato, settore o inserzionista. Riporta per ogni risultato codice contratto/campagna, inserzionista, CPM contrattuale, CPM di listino e sconto percentuale calcolato/confermato dai dati. Non inferire approvazioni né altre cause. Regola di riferimento: §3.3 dell'handbook.",
+              "ok": true,
+              "ms": 9223,
+              "charts": 0
+            }
+          ],
+          "answer": "Sì: risultano **7 campagne su 177** fuori policy nel periodo gennaio 2025–settembre 2026. Sono quelle con CPM contrattuale inferiore al 75% del listino, cioè uno sconto complessivo superiore al 25%; la soglia vale anche in presenza di approvazione [§3.3]. L’elenco con codici, inserzionisti e CPM è riportato nell’analisi qui sotto.",
+          "error": null,
+          "firstTokenMs": 21248,
+          "ms": 21664
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": false,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": false,
+          "detail": ""
+        }
+      ],
+      "ok": false,
+      "ms": 22912,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico la policy sconti, incluse soglie e relative esclusioni, prima di controllare i contratti.",
+              "input": "Policy sconti commerciali: sconto massimo consentito, eccezioni, esclusioni e criteri per identificare contratti con sconto fuori policy; modalità di calcolo dello sconto rispetto al listino CPM.",
+              "ok": true,
+              "ms": 342,
+              "sources": [
+                "3.3",
+                "3",
+                "3.2",
+                "1.1",
+                "6.5"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Confronto il CPM contrattuale con il listino per individuare contratti oltre il tetto del 25%.",
+              "input": "Individua ed elenca tutti i contratti nel dataset delle campagne Wayfare Media (gennaio 2025-settembre 2026) con sconto complessivo sul listino superiore al 25%, cioè CPM contrattuale inferiore al 75% del CPM di listino. Applica la regola handbook §3.3: qualsiasi contratto con CPM contrattuale < 75% del listino è fuori policy, anche se approvato. Calcola lo sconto da CPM contrattuale/listino e raggruppa per contratto, riportando codice contratto, inserzionista, CPM di listino, CPM contrattuale e percentuale di sconto. Valuta lo sconto per il contratto complessivo, non per singole righe o erogazione; non considerare sotto policy un contratto solo perché supera lo sconto volume applicabile (soglie §3.2: 10% da 1M impression pianificate, 15% da 3M, 20% da 6M) o perché include sconto aggiuntivo: il criterio è esclusivamente il tetto assoluto 25%. Includi esclusioni pertinenti documentate: nessuna eccezione/approvazione può derogare al tetto assoluto secondo §3.3; non dedurre approvazioni non presenti nei dati. Se i dati non consentono confronto a livello di contratto, segnala il limite invece di inferire.",
+              "ok": true,
+              "ms": 12279,
+              "charts": 0
+            }
+          ],
+          "answer": "L’analisi ha individuato **7 campagne candidate** con sconto superiore al 25%, quindi sotto il 75% del CPM di listino: questo supera il tetto assoluto e non ammette deroghe [§3.3]. Tuttavia, il dataset non contiene codici contratto: non posso confermare che ciascuna campagna corrisponda a un contratto distinto né garantire un elenco completo a livello contrattuale. I dettagli sono nella tabella mostrata sotto.",
+          "error": null,
+          "firstTokenMs": 22824,
+          "ms": 22912
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 46781,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico le date dei lavori a Venezia e le condizioni, incluse le esclusioni, per eventuali make-good.",
+              "input": "Aeroporto VCE Venezia lavori ristrutturazione cantiere periodo campagne erogazione calo disruption make-good garanzia delivery esclusioni cause operative",
+              "ok": true,
+              "ms": 341,
+              "sources": [
+                "5.4",
+                "5.3",
+                "5.2",
+                "5.1",
+                "12"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Misuro l'erogazione a VCE nel periodo dei lavori e verifico quali campagne concluse rientrano nel make-good.",
+              "input": "Per le campagne nel dataset con aeroporto VCE e date di erogazione dal 12 gennaio al 29 marzo 2026, confronta impression pianificate ed erogate e descrivi l'andamento durante il periodo dei lavori. Inoltre identifica le campagne VCE coinvolte con flight concluso entro il 30 settembre 2026 che hanno erogato meno del 95% del pianificato a livello complessivo della campagna (sommando tutti gli aeroporti e tutti i giorni del flight); applica make-good solo se creatività non consegnate in ritardo e campagna non sospesa o modificata su richiesta del cliente. Riporta per ogni campagna codice e inserzionista, impression pianificate/erogate, percentuale erogata e make-good calcolato come (impression pianificate - impression erogate) × CPM contrattuale / 1000. Considera solo giorni con dato di erogazione valido.",
+              "ok": true,
+              "ms": 33361,
+              "charts": 1
+            }
+          ],
+          "answer": "Sì. Durante i lavori a VCE (12 gennaio–29 marzo 2026) risultano **611.090 impression erogate su 808.904 pianificate**, pari al **75,55%**. Il dato è incompleto: mancano rilevazioni valide dal 9 febbraio al 23 marzo, quindi non consente di ricostruire un andamento continuo. La documentazione conferma che durante i lavori alcuni schermi furono spenti a rotazione e l’erogazione a VCE fu inferiore al pianificato. [§5.4]\n\nPer le campagne concluse sotto il 95%, il make-good si verifica sull’intera campagna, sommando aeroporti e giorni; **non spetta** se la creatività è stata consegnata in ritardo o la campagna è stata sospesa o modificata su richiesta del cliente. [§5.1; §5.3]\n\n- **WM-2025-0060 — Vigna Antica:** 75,06% erogato; make-good escluso perché la creatività risulta consegnata in ritardo.\n- **WM-2026-0021 — Vigna Antica:** 94,17%; make-good potenziale **637,01 €**.\n- **WM-2026-0128 — Essenza Profumi:** 84,94%; make-good potenziale **387,31 €**.\n- **WM-2026-0156 — Orizzonte Viaggi:** 91,22%; make-good potenziale **861,54 €**.\n\nPer le ultime tre, il dataset non chiarisce se ci siano state sospensioni o modifiche richieste dal cliente: va verificato prima di confermare il diritto. Il make-good, se dovuto, consiste in impression gratuite per un flight successivo, non in denaro, e va utilizzato entro sei mesi dalla fine della campagna. [§5.2]",
+          "error": null,
+          "firstTokenMs": 45252,
+          "ms": 46781
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 37116,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico le regole su interruzioni o lavori aeroportuali, garanzie di erogazione e make-good, incluse le esclusioni.",
+              "input": "Venezia VCE lavori aeroportuali interruzione o riduzione erogazione campagne: regole e condizioni di make-good, garanzia di delivery, clienti/campagne coinvolti ed esclusioni; cercare definizione periodo dei lavori e rimedi applicabili",
+              "ok": true,
+              "ms": 326,
+              "sources": [
+                "5.4",
+                "5.3",
+                "12",
+                "5.2",
+                "5.1"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Controllo le campagne erogate a VCE durante i lavori e verifico, a livello di campagna conclusa, quali scendono sotto la soglia di make-good.",
+              "input": "Analizza il dataset delle campagne Wayfare Media per verificare se l'erogazione è calata durante i lavori a Venezia Marco Polo: periodo lavori dal 12 gennaio al 29 marzo 2026, aeroporto VCE. Confronta le impression erogate con quelle pianificate per le campagne che hanno avuto erogazione a VCE nel periodo, ma applica la garanzia a livello dell'intera campagna, sommando tutti gli aeroporti e tutti i giorni del flight. Usa solo campagne concluse (data di fine flight passata) e solo giorni con dato di erogazione valido. Regola: una campagna conclusa sotto il 95% delle impression pianificate ha diritto automaticamente a make-good; il valore è (impression pianificate − impression erogate) × CPM contrattuale / 1000, pari all'intera differenza. Escludi dal diritto le campagne con creatività consegnate in ritardo, quelle sospese o modificate su richiesta del cliente, e quelle ancora in corso. Indica se nel periodo VCE l'erogazione è inferiore al pianificato; per ogni campagna interessata riporta codice e inserzionista, impression pianificate ed erogate, percentuale delivery, CPM e valore make-good, segnalando le eventuali esclusioni solo se verificabili nei dati. Se i dati non consentono di verificare una condizione di esclusione, esplicitalo senza presumere l'idoneità. Riporta anche il conteggio delle campagne eleggibili e il totale make-good.",
+              "ok": true,
+              "ms": 26352,
+              "charts": 0
+            }
+          ],
+          "answer": "Sì. Durante i lavori a VCE, dal **12 gennaio al 29 marzo 2026**, l’erogazione è stata inferiore al pianificato. La verifica del make-good, però, si fa **a fine flight e sull’intera campagna**, sommando aeroporti e giorni: spetta se la delivery è sotto il 95% e copre la differenza tra pianificato ed erogato [§5.4; §5.1; §5.2].\n\nDai dati risultano **tre campagne potenzialmente aventi diritto**, per un make-good complessivo di **1.885,85 €**:\n\n- **WM-2026-0021 — Vigna Antica:** **637,01 €**\n- **WM-2026-0128 — Essenza Profumi:** **387,31 €**\n- **WM-2026-0156 — Orizzonte Viaggi:** **861,54 €**\n\nLa campagna **WM-2025-0060 — Vigna Antica** è esclusa perché la creatività risulta consegnata in ritardo. Le esclusioni per campagne sospese o modificate su richiesta del cliente non sono verificabili nei dati; quindi l’idoneità definitiva delle tre campagne sopra va confermata su questo punto [§5.3]. Il make-good è in impression gratuite per un flight successivo, da usare entro sei mesi dalla fine della campagna, e non è convertibile in denaro [§5.2].",
+          "error": null,
+          "firstTokenMs": 35131,
+          "ms": 37116
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 35211,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Verifico nell’handbook le date dei lavori a Venezia e le regole di compensazione applicabili.",
+              "input": "lavori o chiusure a Venezia aeroporto VCE campagne impattate date riduzione erogazione, garanzia delivery, make-good o compensazioni, condizioni ed esclusioni",
+              "ok": true,
+              "ms": 340,
+              "sources": [
+                "5.4",
+                "5.3",
+                "12",
+                "5.1",
+                "5.2"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Misuro la delivery delle campagne a VCE nel periodo dei lavori e verifico quali concluse rientrano nella soglia di make-good.",
+              "input": "Analizza le campagne con aeroporto VCE e date di flight sovrapposte al periodo dei lavori, dal 12 gennaio al 29 marzo 2026 incluso. Per ciascuna campagna indica codice contratto e inserzionista, impression pianificate ed erogate, percentuale di delivery e stato/date del flight. Verifica make-good secondo la policy: garanzia valutata sull'intera campagna, su tutti gli aeroporti e giorni del flight, solo dopo la fine del flight; make-good se campagna conclusa sotto il 95%, calcolato sull'intera differenza tra impression pianificate ed erogate. Escludi dal diritto le campagne con creatività consegnate in ritardo rispetto alla scadenza di §2.6 e le campagne sospese o modificate su richiesta cliente; le campagne ancora in corso non sono eleggibili. Distingui la riduzione locale a VCE dall'esito complessivo della campagna e riporta eventuale valore in euro del make-good usando il CPM contrattuale. Non ipotizzare cause.",
+              "ok": true,
+              "ms": 25387,
+              "charts": 0
+            }
+          ],
+          "answer": "Sì. Per le quattro campagne con flight sovrapposto ai lavori, la delivery a VCE nel periodo interessato è stata inferiore al pianificato. Il make-good, però, si valuta sulla campagna **nel suo complesso**, sommando aeroporti e giorni del flight, e solo a flight concluso: scatta sotto il 95% [§5.1; §5.4].\n\n- **WM-2026-0021 — Vigna Antica:** delivery complessiva 94,17%; make-good potenziale **637,01 €**.\n- **WM-2026-0128 — Essenza Profumi:** 84,94%; make-good potenziale **387,31 €**.\n- **WM-2026-0156 — Orizzonte Viaggi:** 91,22%; make-good potenziale **861,54 €**.\n\nGli importi sono calcolati sullo shortfall complessivo al CPM contrattuale. Prima di confermarli va verificato che queste campagne non siano state sospese o modificate su richiesta del cliente, condizioni che escludono il make-good [§5.2; §5.3]. **WM-2025-0060 — Vigna Antica** è sotto soglia, ma esclusa perché le creatività sono state consegnate in ritardo [§5.3].\n\nIl make-good consiste in impression gratuite per un flight successivo, non in denaro, e va usato entro sei mesi dalla fine della campagna [§5.2].",
+          "error": null,
+          "firstTokenMs": 33863,
+          "ms": 35211
+        }
+      ]
+    }
+  ]
+}

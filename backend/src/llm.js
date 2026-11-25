@@ -3,8 +3,13 @@ import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 
 const HEADERS = { "X-Title": "Wayfare Media Agents" };
 
-/** @param {{ model?: string, apiKey?: string }} [override] impostazioni scelte dall'utente */
-export function createChatModel(config, { model = config.LLM_MODEL, apiKey = config.OPENROUTER_API_KEY } = {}) {
+/**
+ * @param {{ model?: string, apiKey?: string, temperature?: number }} [override] impostazioni scelte dall'utente.
+ * `temperature` va passata solo se il modello la supporta: con `require_parameters` OpenRouter rifiuta (404) una
+ * richiesta con un parametro che il modello non accetta, e i modelli più recenti di Anthropic e OpenAI non
+ * accettano la temperatura. Senza, il modello usa il suo default.
+ */
+export function createChatModel(config, { model = config.LLM_MODEL, apiKey = config.OPENROUTER_API_KEY, temperature } = {}) {
   const modelKwargs = {
     // instrada solo verso provider che supportano tutti i parametri richiesti (tool calling incluso)
     provider: { require_parameters: true },
@@ -18,7 +23,7 @@ export function createChatModel(config, { model = config.LLM_MODEL, apiKey = con
     model,
     apiKey,
     configuration: { baseURL: config.OPENROUTER_BASE_URL, defaultHeaders: HEADERS },
-    temperature: 0,
+    ...(temperature === undefined ? {} : { temperature }),
     timeout: config.LLM_TIMEOUT_MS,
     maxRetries: 1,
     modelKwargs,

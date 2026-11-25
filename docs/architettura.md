@@ -202,6 +202,7 @@ front end.
 | Grafici PNG (matplotlib/seaborn) | Requisito del progetto; la vista "Dati" affianca la tabella con i numeri |
 | JavaScript, non TypeScript | Scelta del progetto; i confini sono tipizzati a runtime con zod (back end) e pydantic (data agent) |
 | Scadenza del turno propagata agli strumenti | I timeout fissi per livello non impediscono a più chiamate in sequenza di superare il tempo del turno; con la scadenza ogni livello sa quanto tempo gli resta |
+| Temperatura 0 solo dove il modello la accetta | Rende ripetibili numeri e codice dell'analista; i modelli più recenti di Anthropic e OpenAI non la accettano e, con `require_parameters`, OpenRouter rifiuterebbe la richiesta. Il supporto si legge dal catalogo OpenRouter |
 | Valutazione end-to-end separata dai test | I test unitari usano un modello finto e sono gratuiti e deterministici; la qualità dell'orchestrazione si misura solo con il modello vero, su casi con risultato atteso |
 
 ## 9. Limiti noti

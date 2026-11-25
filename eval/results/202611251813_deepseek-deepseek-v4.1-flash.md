@@ -4,8 +4,10 @@
 - Modello: `deepseek/deepseek-v4.1-flash`
 - Casi superati (tutti i controlli): **19/20**
 - Percorso degli strumenti corretto: **20/20** (ottimale 18/20)
+- Turni finiti in errore (provider o app): 0
 - Tempo per risposta: mediana 5.3 s, 90° percentile 28.3 s
 - Costo totale: 0.0474 USD
+- Controlli ricalcolati il 2026-11-25 19:41 UTC sulle risposte salvate
 
 | Categoria | Casi | Percorso corretto | Superati |
 |---|---|---|---|

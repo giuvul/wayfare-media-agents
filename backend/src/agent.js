@@ -74,10 +74,13 @@ export function createOrchestrator({ model, tools, maxModelCalls, checkpointer =
  */
 export function createAgentProvider({ settings, buildModel, tools, maxModelCalls, checkpointer }) {
   let cached = { version: -1, agent: null };
-  return () => {
+  return async () => {
     if (cached.version !== settings.version) {
+      const version = settings.version;
       const { model, apiKey } = settings.get();
-      cached = { version: settings.version, agent: createOrchestrator({ model: buildModel({ model, apiKey }), tools, maxModelCalls, checkpointer }).agent };
+      // temperatura 0 (risposte ripetibili) solo dove il modello la accetta
+      const temperature = (await settings.supportsTemperature(model)) ? 0 : undefined;
+      cached = { version, agent: createOrchestrator({ model: buildModel({ model, apiKey, temperature }), tools, maxModelCalls, checkpointer }).agent };
     }
     return cached.agent;
   };

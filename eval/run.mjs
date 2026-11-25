@@ -7,8 +7,11 @@
 //   node eval/run.mjs --only mix-make-good    # solo alcuni casi (id separati da virgole)
 //   node eval/run.mjs --only mix-make-good --repeat 3   # stabilità di un caso
 //   node eval/run.mjs --base http://localhost:3001 --out eval/results
+//   node eval/run.mjs --rescore eval/results/<report>.json   # ricalcola i controlli sulle risposte salvate
 //
 // Scrive un report JSON (ogni turno, con eventi e tempi) e uno Markdown in eval/results/.
+// Per confrontare modelli diversi va svuotato LLM_FALLBACK_MODELS: con un modello di riserva attivo OpenRouter può
+// rispondere con quello al posto del modello scelto, senza che l'API lo segnali.
 // Il costo è la differenza del consumo della chiave OpenRouter letto da /api/settings prima e dopo
 // (include le chiamate del data agent se usa la stessa chiave): lo script non legge mai la chiave.
 import { randomUUID } from "node:crypto";
@@ -25,6 +28,8 @@ const { values: opts } = parseArgs({
     out: { type: "string", default: join(here, "results") },
     "turn-timeout": { type: "string", default: "180" },
     repeat: { type: "string", default: "1" }, // ripete ogni caso N volte (stabilità delle risposte)
+    // ricalcola i controlli di un report esistente (es. dopo aver corretto un controllo), senza interrogare l'agente
+    rescore: { type: "string" },
   },
 });
 const TOOL = { cerca_documentazione: "kb", analizza_dati: "data" };
@@ -76,12 +81,15 @@ async function turn(sessionId, message) {
   return out;
 }
 
-/** Tutte le interpretazioni numeriche dei numeri nel testo (formato italiano e inglese). */
+const SCALE = { mila: 1e3, milioni: 1e6, milione: 1e6, mln: 1e6, miliardi: 1e9, miliardo: 1e9, mld: 1e9 };
+
+/** Tutte le interpretazioni numeriche dei numeri nel testo: formato italiano e inglese, e "230,6 milioni". */
 function numbersIn(text) {
   const found = [];
-  for (const [raw] of text.matchAll(/\d[\d.,]*\d|\d/g)) {
-    found.push(Number(raw.replace(/\./g, "").replace(",", "."))); // 30.450,54
-    found.push(Number(raw.replace(/,/g, ""))); // 30,450.54
+  for (const [, raw, unit] of text.matchAll(/(\d[\d.,]*\d|\d)(?:\s*(mila|milioni|milione|mln|miliardi|miliardo|mld)\b)?/gi)) {
+    const scale = unit ? SCALE[unit.toLowerCase()] : 1;
+    found.push(Number(raw.replace(/\./g, "").replace(",", ".")) * scale); // 30.450,54 · 230,6 milioni
+    found.push(Number(raw.replace(/,/g, "")) * scale); // 30,450.54
   }
   return found.filter(Number.isFinite);
 }
@@ -91,7 +99,8 @@ const routeOf = (steps) => steps.map((s) => s.tool).filter((t, i, a) => t !== a[
 function check(c, last) {
   const checks = [];
   const route = routeOf(last.steps);
-  checks.push({ name: "percorso", ok: c.route.includes(route), detail: `${route} (atteso: ${c.route.join(" | ")})` });
+  // un turno finito in errore non ha scelto nessun percorso: non conta come corretto
+  checks.push({ name: "percorso", ok: !last.error && c.route.includes(route), detail: `${route} (atteso: ${c.route.join(" | ")})` });
   checks.push({ name: "risposta", ok: !last.error && last.answer.length > 0, detail: last.error ?? "" });
   for (const id of c.cite ?? []) {
     const ok = new RegExp(`§\\s?${id.replace(".", "\\.")}(?!\\d)`).test(last.answer);
@@ -124,39 +133,61 @@ async function usage() {
 }
 
 const { casi } = JSON.parse(readFileSync(join(here, "cases.json"), "utf8"));
-const only = opts.only?.split(",");
-const selected = (only ? casi.filter((c) => only.includes(c.id)) : casi).flatMap((c) => Array(Number(opts.repeat)).fill(c));
-const before = await usage();
-const results = [];
-for (const c of selected) {
-  const sessionId = randomUUID();
-  const turns = [];
-  for (const message of c.turns) turns.push(await turn(sessionId, message));
-  const last = turns.at(-1);
-  const verdict = check(c, last);
-  results.push({ id: c.id, categoria: c.categoria, ...verdict, ms: last.ms, turns });
+const byId = Object.fromEntries(casi.map((c) => [c.id, c]));
+const logLine = (c, verdict, ms) => {
   const failed = verdict.checks.filter((k) => !k.ok).map((k) => k.name + (k.detail ? ` [${k.detail}]` : ""));
-  console.log(`${verdict.ok ? "OK  " : "FAIL"} ${c.id.padEnd(26)} ${verdict.route.padEnd(9)} ${(last.ms / 1000).toFixed(1).padStart(6)} s  ${failed.join("; ")}`);
-}
-await new Promise((r) => setTimeout(r, 65_000)); // il consumo letto da /api/settings ha una cache di 60 s
-const after = await usage();
+  console.log(`${verdict.ok ? "OK  " : "FAIL"} ${c.id.padEnd(26)} ${verdict.route.padEnd(9)} ${(ms / 1000).toFixed(1).padStart(6)} s  ${failed.join("; ")}`);
+};
 
-const cost = before.usage !== null && after.usage !== null ? after.usage - before.usage : null;
+let results, date, model, cost, outFile;
+if (opts.rescore) {
+  // stesse risposte, controlli aggiornati: data, modello e costo restano quelli dell'esecuzione originale
+  const saved = JSON.parse(readFileSync(opts.rescore, "utf8"));
+  ({ data: date, modello: model, costo_usd: cost } = saved.summary);
+  results = saved.results.map((r) => {
+    const verdict = check(byId[r.id], r.turns.at(-1));
+    logLine(byId[r.id], verdict, r.ms);
+    return { ...r, ...verdict };
+  });
+  outFile = opts.rescore.replace(/\.json$/, "");
+} else {
+  const only = opts.only?.split(",");
+  const selected = (only ? casi.filter((c) => only.includes(c.id)) : casi).flatMap((c) => Array(Number(opts.repeat)).fill(c));
+  const before = await usage();
+  results = [];
+  for (const c of selected) {
+    const sessionId = randomUUID();
+    const turns = [];
+    for (const message of c.turns) turns.push(await turn(sessionId, message));
+    const last = turns.at(-1);
+    const verdict = check(c, last);
+    results.push({ id: c.id, categoria: c.categoria, ...verdict, ms: last.ms, turns });
+    logLine(c, verdict, last.ms);
+  }
+  await new Promise((r) => setTimeout(r, 65_000)); // il consumo letto da /api/settings ha una cache di 60 s
+  const after = await usage();
+  cost = before.usage !== null && after.usage !== null ? Number((after.usage - before.usage).toFixed(4)) : null;
+  date = new Date().toISOString();
+  model = before.model;
+}
+
 const passed = results.filter((r) => r.ok).length;
 const routeOk = results.filter((r) => r.checks[0].ok).length;
 const optimal = results.filter((r) => r.optimal).length;
 const times = results.map((r) => r.ms).sort((a, b) => a - b);
 const pct = (p) => times[Math.min(times.length - 1, Math.floor(p * times.length))] / 1000;
 const summary = {
-  data: new Date().toISOString(),
-  modello: before.model,
+  data: date,
+  modello: model,
   casi: results.length,
   superati: passed,
   percorso_corretto: routeOk,
   percorso_ottimale: optimal,
+  // errori del provider o dell'app (sovraccarico, timeout): disponibilità, non qualità delle risposte
+  errori: results.filter((r) => r.turns.at(-1).error).length,
   tempo_mediano_s: pct(0.5),
   tempo_p90_s: pct(0.9),
-  costo_usd: cost === null ? null : Number(cost.toFixed(4)),
+  costo_usd: cost,
 };
 
 const byCat = {};
@@ -173,8 +204,10 @@ const md = [
   `- Modello: \`${summary.modello}\``,
   `- Casi superati (tutti i controlli): **${passed}/${results.length}**`,
   `- Percorso degli strumenti corretto: **${routeOk}/${results.length}** (ottimale ${optimal}/${results.length})`,
+  `- Turni finiti in errore (provider o app): ${summary.errori}`,
   `- Tempo per risposta: mediana ${summary.tempo_mediano_s.toFixed(1)} s, 90° percentile ${summary.tempo_p90_s.toFixed(1)} s`,
   `- Costo totale: ${cost === null ? "non disponibile" : `${cost.toFixed(4)} USD`}`,
+  ...(opts.rescore ? [`- Controlli ricalcolati il ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC sulle risposte salvate`] : []),
   ``,
   `| Categoria | Casi | Percorso corretto | Superati |`,
   `|---|---|---|---|`,
@@ -189,9 +222,11 @@ const md = [
   ``,
 ].join("\n");
 
-mkdirSync(opts.out, { recursive: true });
-const stamp = `${summary.data.slice(0, 16).replace(/[-:T]/g, "")}_${(summary.modello ?? "modello").replace(/[^\w.-]+/g, "-")}`;
-writeFileSync(join(opts.out, `${stamp}.json`), JSON.stringify({ summary, results }, null, 2));
-writeFileSync(join(opts.out, `${stamp}.md`), md);
+if (!outFile) {
+  mkdirSync(opts.out, { recursive: true });
+  outFile = join(opts.out, `${summary.data.slice(0, 16).replace(/[-:T]/g, "")}_${(summary.modello ?? "modello").replace(/[^\w.-]+/g, "-")}`);
+}
+writeFileSync(`${outFile}.json`, JSON.stringify({ summary, results }, null, 2));
+writeFileSync(`${outFile}.md`, md);
 console.log(`\n${passed}/${results.length} superati, percorso corretto ${routeOk}/${results.length}, costo ${summary.costo_usd ?? "n.d."} USD`);
-console.log(`Report: ${join(opts.out, stamp)}.{md,json}`);
+console.log(`Report: ${outFile}.{md,json}`);

@@ -149,9 +149,9 @@ sia la pulizia sia l'analisi della qualità.
 
 `node eval/run.mjs` pone 20 domande realistiche all'agente in esecuzione (documentazione, dati, regole applicate
 ai dati, conversazione e fuori ambito, domande di seguito) e verifica strumenti usati, citazioni e numeri
-rispetto al ground truth. Ultimo risultato con il modello di sviluppo: **percorso corretto 20/20, casi superati
-19/20**, mediana 5,3 s per risposta, 0,05 USD in tutto. Metodo, risultati e problemi emersi in
-[eval/README.md](eval/README.md).
+rispetto al ground truth. Confronto tra tre modelli economici di tre fornitori, a parità di casi: Claude Haiku
+5.5 supera 20/20 casi, DeepSeek V4.1 Flash 19/20, GPT-6 Luna 17/20; ogni giro costa da 0,01 a 0,06 USD. Metodo,
+risultati e problemi emersi in [eval/README.md](eval/README.md).
 
 ## Sicurezza
 

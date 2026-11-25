@@ -26,6 +26,8 @@ export function toModel(m) {
     promptPrice: perMillion(m.pricing?.prompt),
     completionPrice: perMillion(m.pricing?.completion),
     created: m.created ?? null,
+    // temperatura regolabile: i modelli più recenti di Anthropic e OpenAI usano solo il loro default
+    temperature: (m.supported_parameters ?? []).includes("temperature"),
   };
 }
 
@@ -82,6 +84,14 @@ export function createSettingsService({ config, store, fetchImpl = fetch }) {
     get: current,
     get version() {
       return version;
+    },
+    /** true se il modello accetta `temperature` (dal catalogo OpenRouter); false se non lo accetta o non si sa. */
+    async supportsTemperature(model) {
+      try {
+        return (await listModels()).find((m) => m.id === model)?.temperature ?? false;
+      } catch {
+        return false; // senza catalogo si omette il parametro: una richiesta senza temperatura è sempre accettata
+      }
     },
     /** Override da passare al data agent: il modello sempre, la chiave solo se scelta dall'utente. */
     dataAgentOverride() {
