@@ -17,7 +17,7 @@ export function maskKey(key) {
   return key.length <= 12 ? "••••" : `${key.slice(0, 8)}…${key.slice(-4)}`;
 }
 
-function toModel(m) {
+export function toModel(m) {
   const perMillion = (v) => (v == null ? null : Math.round(Number(v) * 1e6 * 1000) / 1000);
   return {
     id: m.id,
@@ -107,7 +107,6 @@ export function createSettingsService({ config, store, fetchImpl = fetch }) {
         apiKey: { source: s.apiKeySource, masked: maskKey(s.apiKey), valid: keyValid, info: keyInfo },
         model: { id: s.model, source: s.modelSource, default: config.LLM_MODEL },
         fallbackModels: config.LLM_FALLBACK_MODELS,
-        embeddingModel: config.EMBEDDING_MODEL,
       };
     },
     async update({ apiKey, model, resetApiKey = false, resetModel = false }) {

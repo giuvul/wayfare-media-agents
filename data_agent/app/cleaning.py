@@ -1,8 +1,10 @@
 """Pulizia dati autonoma ma verificabile.
 
-L'agente riceve un profilo di qualità generico del CSV e il dizionario dati, e scrive da sé il codice
-di pulizia. Il codice gira nella sandbox; il risultato deve superare controlli deterministici
-(`validate`). Se non li supera, l'agente riceve gli errori e riprova. Il codice valido, il report e i
+Prima di tutto un'analisi deterministica (`quality.py`) scansiona tutte le righe del CSV e trova ogni
+anomalia rispetto al dizionario dati, con conteggi ed esempi. L'agente riceve analisi e dizionario e scrive
+il codice di pulizia, che gira nella sandbox. Il risultato deve superare due verifiche: i controlli di
+business (`validate`) e la stessa analisi di qualità rieseguita sui dati puliti, dove le anomalie
+"bloccanti" devono essere sparite. Se non le supera, l'agente riceve gli errori e riprova. Il codice valido, il report e i
 DataFrame puliti vengono salvati in cache e riusati da tutte le analisi successive: stessi dati, stessi
 numeri a ogni domanda (interprete deterministico).
 """
@@ -23,6 +25,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from .config import Settings
 from .llm import build_llm
+from .quality import Schema, analyze, blocking_problems, numeric, parse_dictionary, residuals
 from .sandbox import Sandbox
 
 log = logging.getLogger("data_agent.cleaning")
@@ -44,7 +47,10 @@ CLEANING_TASK = """Devi pulire l'export delle campagne pubblicitarie descritto q
 ## Dizionario dati e regole concordate con il business
 {dizionario}
 
-## Profilo di qualità del file grezzo (calcolato automaticamente)
+## Analisi di qualità del file grezzo (deterministica, su tutte le righe)
+Ogni anomalia trovata, con numero di righe, esempi (`id_riga` e valore) e, dove possibile, il valore
+canonico proposto. Il tuo codice deve gestirle TUTTE: dopo la pulizia gli stessi controlli vengono
+rieseguiti sui dati puliti e quelli con "bloccante": true devono dare zero righe.
 ```json
 {profilo}
 ```
@@ -75,52 +81,32 @@ class CleanedData:
     code: str
     source: str  # "cache" | "riusata" (codice già validato, dati cambiati) | "generata" (scritta dall'LLM)
     stats: dict
+    quality: dict  # {"grezzo": analisi del file grezzo, "residui": {id anomalia: righe ancora presenti}}
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build_profile(raw: pd.DataFrame) -> dict:
-    """Profilo generico: non elenca le anomalie, mostra ciò che un analista guarderebbe per primo."""
-    profile: dict = {
-        "righe": len(raw),
-        "colonne": len(raw.columns),
-        "righe_con_id_riga_ripetuto": int(raw["id_riga"].duplicated().sum()) if "id_riga" in raw else None,
-        "colonne_dettaglio": {},
-    }
+def build_profile(raw: pd.DataFrame, schema: Schema, quality: dict | None = None) -> dict:
+    """Ciò che riceve l'LLM: l'analisi di qualità completa e un riepilogo delle colonne."""
+    columns = {}
     for col in raw.columns:
         s = raw[col]
-        info: dict = {"dtype": str(s.dtype), "mancanti": int(s.isna().sum()), "distinti": int(s.nunique())}
-        if pd.api.types.is_numeric_dtype(s):
-            info.update({"min": _num(s.min()), "max": _num(s.max()), "mediana": _num(s.median()),
-                         "negativi": int((s < 0).sum())})
-        else:
-            counts = s.dropna().astype(str).value_counts()
-            info["piu_frequenti"] = counts.head(8).index.tolist()
-            if len(counts) > 8:
-                info["piu_rari"] = counts.tail(8).index.tolist()
-            sample = s.dropna().astype(str)
-            info["esempi_forme_diverse"] = _shape_examples(sample)
-        profile["colonne_dettaglio"][col] = info
-    return profile
+        info: dict = {"dtype": str(s.dtype), "distinti": int(s.nunique())}
+        kind = schema.columns[col].kind if col in schema.columns else None
+        if kind in ("intero", "decimale"):
+            nums = numeric(s)
+            info.update({"min": _num(nums.min()), "max": _num(nums.max()), "mediana": _num(nums.median())})
+        elif s.nunique() <= 12:
+            info["valori"] = s.dropna().astype(str).value_counts().head(12).to_dict()
+        columns[col] = info
+    return {"righe": len(raw), "colonne": len(raw.columns), "qualita": quality or analyze(raw, schema),
+            "colonne_dettaglio": columns}
 
 
 def _num(v) -> float | None:
     return None if pd.isna(v) else round(float(v), 3)
-
-
-def _shape_examples(sample: pd.Series, per_shape: int = 2) -> dict[str, list[str]]:
-    """Raggruppa i valori per 'forma' (cifre -> 9, lettere -> a) per far emergere formati incoerenti."""
-    shapes = sample.str.replace(r"[0-9]", "9", regex=True).str.replace(r"[^\W\d_]", "a", regex=True)
-    examples: dict[str, list[str]] = {}
-    for shape, value in zip(shapes, sample):
-        bucket = examples.setdefault(shape, [])
-        if len(bucket) < per_shape:
-            bucket.append(value)
-        if len(examples) > 12:
-            break
-    return examples if 1 < len(examples) <= 12 else {}
 
 
 def validate(raw: pd.DataFrame, clean: pd.DataFrame) -> list[str]:
@@ -187,16 +173,22 @@ def _message_text(msg) -> str:
     return str(content)
 
 
-def _run_cleaning(code: str, raw: pd.DataFrame, raw_path: Path, settings: Settings):
-    """Esegue `pulisci` nella sandbox e verifica il risultato. Restituisce (df_pulito, report, problemi)."""
+def _run_cleaning(code: str, raw: pd.DataFrame, raw_path: Path, settings: Settings, schema: Schema):
+    """Esegue `pulisci` nella sandbox e verifica il risultato. Restituisce (df_pulito, report, problemi, analisi)."""
     with Sandbox({"df_grezzo": raw_path}, settings.charts_dir, exec_timeout_s=60) as box:
         result = box.run(code + "\n_df_pulito, _report = pulisci(df_grezzo.copy())\n")
         if not result.ok:
-            return None, [], [f"Errore in esecuzione: {result.error}"]
+            return None, [], [f"Errore in esecuzione: {result.error}"], None
         clean, report = box.get_frame("_df_pulito", "_report")
     if clean is None:
-        return None, [], ["pulisci() non ha restituito un DataFrame"]
-    return clean, [str(r) for r in (report or [])], validate(raw, clean)
+        return None, [], ["pulisci() non ha restituito un DataFrame"], None
+    problems = validate(raw, clean)
+    try:
+        clean_quality = analyze(clean, schema)  # stessi controlli del grezzo, sui dati puliti
+    except Exception as exc:  # noqa: BLE001 - un risultato con tipi inattesi non deve far cadere il servizio
+        return clean, [str(r) for r in (report or [])], problems + [f"analisi di qualità non eseguibile: {exc}"], None
+    problems += [p for p in blocking_problems(clean_quality) if p not in problems]
+    return clean, [str(r) for r in (report or [])], problems, clean_quality
 
 
 def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> CleanedData:
@@ -214,15 +206,28 @@ def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> Cle
     key = {"csv_sha256": _sha256(settings.data_csv_path), "dizionario_sha256": _sha256(settings.data_dictionary_path)}
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
 
+    schema = parse_dictionary(settings.data_dictionary_path.read_text(encoding="utf-8"))
+
     if not force and valid_path.exists() and all(meta.get(k) == v for k, v in key.items()):
         log.info("pulizia: riuso il risultato in cache (%s)", meta["created_at"])
-        return CleanedData(raw_path, complete_path, valid_path, meta["report"], meta["code"], "cache", meta["stats"])
+        if "qualita" not in meta:  # cache creata prima dell'analisi di qualità: la si calcola una volta
+            raw = pd.read_csv(settings.data_csv_path)
+            clean = pd.read_pickle(complete_path)
+            raw_quality = analyze(raw, schema)
+            meta["qualita"] = {"grezzo": raw_quality, "residui": residuals(raw_quality, analyze(clean, schema))}
+            meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        return CleanedData(raw_path, complete_path, valid_path, meta["report"], meta["code"], "cache", meta["stats"],
+                           meta["qualita"])
 
     raw = pd.read_csv(settings.data_csv_path)
     with open(raw_path, "wb") as fh:
         pickle.dump(raw, fh)
+    raw_quality = analyze(raw, schema)
+    log.info("analisi di qualità: %d tipi di anomalia su %d righe",
+             len(raw_quality["anomalie"]), raw_quality["righe_analizzate"])
 
-    def save(clean: pd.DataFrame, report: list[str], code: str, attempts: int, source: str, model: str) -> CleanedData:
+    def save(clean: pd.DataFrame, report: list[str], code: str, attempts: int, source: str, model: str,
+             clean_quality: dict) -> CleanedData:
         valid = clean[clean["impression_erogate"].notna()].reset_index(drop=True)
         for path, frame in ((complete_path, clean), (valid_path, valid)):
             tmp = path.with_suffix(".tmp")
@@ -231,21 +236,22 @@ def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> Cle
             tmp.replace(path)  # scrittura atomica: un'analisi in corso non legge mai un file a metà
         stats = {"righe_grezze": len(raw), "righe_dopo_deduplica": len(clean), "righe_valide": len(valid),
                  "tentativi": attempts}
+        quality = {"grezzo": raw_quality, "residui": residuals(raw_quality, clean_quality)}
         new_meta = {**key, "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "model": model, "source": source,
-                    "code": code, "report": report, "stats": stats}
+                    "code": code, "report": report, "stats": stats, "qualita": quality}
         meta_path.write_text(json.dumps(new_meta, ensure_ascii=False, indent=2), encoding="utf-8")
         (cache / "pulizia_generata.py").write_text(code + "\n", encoding="utf-8")
-        return CleanedData(raw_path, complete_path, valid_path, report, code, source, stats)
+        return CleanedData(raw_path, complete_path, valid_path, report, code, source, stats, quality)
 
     if not force and meta.get("code") and meta.get("dizionario_sha256") == key["dizionario_sha256"]:
-        clean, report, problems = _run_cleaning(meta["code"], raw, raw_path, settings)
+        clean, report, problems, clean_quality = _run_cleaning(meta["code"], raw, raw_path, settings, schema)
         if not problems:
             log.info("pulizia: dati cambiati, il codice già validato supera ancora i controlli (nessuna chiamata LLM)")
-            return save(clean, report, meta["code"], 0, "riusata", meta.get("model", ""))
+            return save(clean, report, meta["code"], 0, "riusata", meta.get("model", ""), clean_quality)
         log.info("pulizia: il codice precedente non supera più i controlli (%d problemi): rigenero", len(problems))
 
     llm = llm or build_llm(settings)
-    profile = build_profile(raw)
+    profile = build_profile(raw, schema, raw_quality)
     dizionario = settings.data_dictionary_path.read_text(encoding="utf-8")
     messages = [
         SystemMessage(CLEANING_SYSTEM_PROMPT),
@@ -259,12 +265,13 @@ def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> Cle
         t0 = time.monotonic()
         reply = llm.invoke(messages)
         code = _extract_code(_message_text(reply))
-        clean, report, problems = _run_cleaning(code, raw, raw_path, settings)
+        clean, report, problems, clean_quality = _run_cleaning(code, raw, raw_path, settings, schema)
         log.info("pulizia tentativo %d: %d problemi (%.1fs)", attempt, len(problems), time.monotonic() - t0)
         for problem in problems:
             log.info("  problema: %s", problem[:300])
         if not problems:
-            return save(clean, report, code, attempt, "generata", getattr(llm, "model_name", settings.llm_model))
+            return save(clean, report, code, attempt, "generata", getattr(llm, "model_name", settings.llm_model),
+                        clean_quality)
         last_problem = "\n".join(f"- {p}" for p in problems)
         messages += [reply, HumanMessage(
             "Il codice non supera i controlli di qualità:\n" + last_problem +

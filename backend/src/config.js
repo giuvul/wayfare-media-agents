@@ -23,6 +23,7 @@ const schema = z.object({
   LLM_MODEL: z.string().min(1),
   LLM_FALLBACK_MODELS: commaList(),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(45_000),
+  EMBEDDING_PROVIDER: z.enum(["openrouter", "local"]).default("openrouter"),
   EMBEDDING_MODEL: z.string().min(1),
 
   DATA_AGENT_URL: z.url().default("http://localhost:8001"),
@@ -33,9 +34,11 @@ const schema = z.object({
   CHROMA_COLLECTION: z.string().default("wayfare_handbook"),
   KB_DIR: z.string().default(path.join(REPO_DIR, "data", "kb")),
   RAG_TOP_K: z.coerce.number().int().min(1).max(10).default(5),
-  RAG_MIN_SIMILARITY: z.coerce.number().min(0).max(1).default(0.3),
+  // soglia per il modello di embedding del .env; i modelli scelti dall'interfaccia hanno una soglia calibrata
+  RAG_MIN_SIMILARITY: z.coerce.number().min(0).max(1).default(0.2),
 
   STORAGE_DIR: z.string().default(path.join(REPO_DIR, "storage")),
+  MODELS_DIR: z.string().optional(), // modelli di embedding locali; default STORAGE_DIR/models
 
   BACKEND_PORT: z.coerce.number().int().default(3001),
   BACKEND_HOST: z.string().default("127.0.0.1"),
@@ -52,5 +55,6 @@ export function loadConfig(env = process.env) {
     const problems = parsed.error.issues.map((i) => `- ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Configurazione non valida (controlla il file .env):\n${problems}`);
   }
-  return Object.freeze(parsed.data);
+  const data = parsed.data;
+  return Object.freeze({ ...data, MODELS_DIR: data.MODELS_DIR ?? path.join(data.STORAGE_DIR, "models") });
 }

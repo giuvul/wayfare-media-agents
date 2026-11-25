@@ -23,12 +23,14 @@ export async function getOrCreateKbCollection(client, name, embeddingModel) {
 /** Collection per la lettura (chat): deve esistere ed essere stata indicizzata con lo stesso modello. */
 export async function getKbCollection(client, name, embeddingModel) {
   const collection = await client.getCollection({ name, embeddingFunction: null });
+  assertSameModel(collection, embeddingModel);
+  return collection;
+}
+
+export function assertSameModel(collection, embeddingModel) {
   const indexedWith = collection.metadata?.embedding_model;
   if (indexedWith && indexedWith !== embeddingModel) {
-    throw new Error(
-      `La knowledge base è indicizzata con "${indexedWith}" ma EMBEDDING_MODEL è "${embeddingModel}": ` +
-        "riesegui `npm run ingest -- --reset`.",
-    );
+    throw new Error(`La collection "${collection.name}" è indicizzata con "${indexedWith}" e non con "${embeddingModel}": ` +
+      "riesegui `npm run ingest -- --reset`.");
   }
-  return collection;
 }

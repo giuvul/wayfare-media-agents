@@ -187,7 +187,8 @@ def cleaning() -> dict:
     if state.data is None:
         raise HTTPException(status_code=503, detail=f"Dataset non pronto (stato: {state.status}).")
     return {"fonte": state.data.source, "stats": state.data.stats, "report": state.data.report,
-            "codice": state.data.code, "status": state.status, "refreshing": state.refreshing, "error": state.error}
+            "codice": state.data.code, "qualita": state.data.quality, "status": state.status,
+            "refreshing": state.refreshing, "error": state.error}
 
 
 @app.post("/cleaning/rebuild", status_code=202, dependencies=[Depends(require_token)])

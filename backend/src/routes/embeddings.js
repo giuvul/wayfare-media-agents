@@ -1,0 +1,55 @@
+// Modello di embedding: stato, catalogo OpenRouter, modelli locali con valutazione della macchina, cambio.
+import express from "express";
+import { z } from "zod";
+
+import { asyncRoute } from "../errors.js";
+import { searchModels } from "../settings.js";
+
+const SwitchRequest = z
+  .object({ provider: z.enum(["openrouter", "local"]), model: z.string().trim().min(1).max(200).regex(/^[\w.:/~-]+$/) })
+  .strict();
+
+export function embeddingsRouter({ embeddings, embeddingSwitcher, indexer }) {
+  const router = express.Router();
+  router.use(express.json({ limit: "2kb" }));
+  const fail = (res, err) => res.status(err.status ?? 500).json({ error: err.message });
+
+  router.get("/embeddings", (_req, res) => {
+    res.json({ current: embeddings.current(), default: embeddings.defaults, job: embeddingSwitcher.state() });
+  });
+
+  router.get(
+    "/embeddings/remote",
+    asyncRoute(async (req, res) => {
+      const all = await embeddings.listRemote();
+      res.json({ total: all.length, models: searchModels(all, String(req.query.q ?? "").slice(0, 100)) });
+    }),
+  );
+
+  router.get(
+    "/embeddings/local",
+    asyncRoute(async (_req, res) => {
+      const counts = await indexer.counts().catch(() => ({}));
+      const chunks = Object.values(counts).reduce((s, n) => s + n, 0) || 40;
+      res.json(embeddings.localCatalog(chunks));
+    }),
+  );
+
+  router.get("/embeddings/switch", (_req, res) => res.json(embeddingSwitcher.state()));
+
+  router.post(
+    "/embeddings/switch",
+    asyncRoute(async (req, res) => {
+      const parsed = SwitchRequest.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: "Richiesta non valida." });
+      try {
+        res.status(202).json(await embeddingSwitcher.start(parsed.data));
+      } catch (err) {
+        if (err.status) return fail(res, err);
+        throw err;
+      }
+    }),
+  );
+
+  return router;
+}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { api } from "../api.js";
 import { formatContext, formatPrice } from "../format.js";
+import EmbeddingCard from "./EmbeddingCard.jsx";
 import { IconAlert, IconCheck, IconSearch } from "./Icons.jsx";
 
 function ApiKeyCard({ settings, onSaved }) {
@@ -147,14 +148,7 @@ export default function Settings({ onChanged }) {
           <>
             <ApiKeyCard settings={settings} onSaved={saved} />
             <ModelCard settings={settings} onSaved={saved} />
-            <section className="card pad stack">
-              <h2 className="card-title">Modello di embedding</h2>
-              <p><code>{settings.embeddingModel}</code></p>
-              <p className="muted small">
-                Si imposta nel file .env (EMBEDDING_MODEL): cambiarlo richiede di reindicizzare la documentazione con
-                <code> npm run ingest -- --reset</code>, perché vettori di modelli diversi non sono confrontabili.
-              </p>
-            </section>
+            <EmbeddingCard />
           </>
         )}
       </div>

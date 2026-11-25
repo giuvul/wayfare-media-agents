@@ -8,6 +8,7 @@ import { pinoHttp } from "pino-http";
 import { asyncRoute, userFacingError } from "./errors.js";
 import { chatRouter } from "./routes/chat.js";
 import { conversationsRouter } from "./routes/conversations.js";
+import { embeddingsRouter } from "./routes/embeddings.js";
 import { kbRouter } from "./routes/kb.js";
 import { settingsRouter } from "./routes/settings.js";
 
@@ -15,7 +16,8 @@ const CHART_ID = /^[0-9a-f]{32}$/;
 
 /**
  * @param {{ config: any, log: import("pino").Logger, getAgent: () => any, checkpointer: any, dataAgent: any,
- *   retriever: any, conversations: any, settings: any, documents: any, indexer: any }} deps
+ *   retriever: any, conversations: any, settings: any, documents: any, indexer: any, embeddings: any,
+ *   embeddingSwitcher: any }} deps
  */
 export function createApp(deps) {
   const { config, log, dataAgent, retriever, settings } = deps;
@@ -33,6 +35,7 @@ export function createApp(deps) {
   app.use("/api", conversationsRouter({ ...deps, activeSessions }));
   app.use("/api", settingsRouter(deps));
   app.use("/api", kbRouter(deps));
+  app.use("/api", embeddingsRouter(deps));
 
   app.get(
     "/api/charts/:chartId",

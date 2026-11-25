@@ -25,22 +25,12 @@ export function createChatModel(config, { model = config.LLM_MODEL, apiKey = con
   });
 }
 
-export function createEmbeddings(config, apiKey = config.OPENROUTER_API_KEY) {
+export function createEmbeddings(config, apiKey = config.OPENROUTER_API_KEY, model = config.EMBEDDING_MODEL) {
   return new OpenAIEmbeddings({
-    model: config.EMBEDDING_MODEL,
+    model,
     apiKey,
     configuration: { baseURL: config.OPENROUTER_BASE_URL, defaultHeaders: HEADERS },
     batchSize: 32,
     maxRetries: 2,
   });
-}
-
-/** Restituisce sempre il client di embedding per la chiave attuale (ricreato solo se la chiave cambia). */
-export function embeddingsProvider(config, getApiKey) {
-  let cached = { key: null, embeddings: null };
-  return () => {
-    const key = getApiKey();
-    if (cached.key !== key) cached = { key, embeddings: createEmbeddings(config, key) };
-    return cached.embeddings;
-  };
 }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "../../api.js";
 import { formatCell } from "../../format.js";
 import { IconSpark } from "../Icons.jsx";
+import QualityTable from "./QualityTable.jsx";
 import { describeSource, useCleaningStatus } from "./useCleaningStatus.js";
 
 export default function Cleaning() {
@@ -31,23 +32,29 @@ export default function Cleaning() {
         <div className="tile"><span>Righe valide per i KPI</span><strong>{formatCell(s.righe_valide)}</strong></div>
         <div className="tile"><span>Tentativi dell'AI</span><strong>{s.tentativi === 0 ? "—" : s.tentativi}</strong></div>
       </div>
-      <div className="toolbar">
-        <p className="muted small">Origine: {describeSource(status.fonte)}.</p>
-        <div className="spacer" />
-        <button type="button" className="btn btn-ghost" onClick={regenerate} disabled={busy}>
-          {busy ? <><span className="spinner spinner-sm" /> Aggiornamento in corso…</> : <><IconSpark size={15} /> Rigenera con l'AI</>}
-        </button>
-      </div>
-      {error && <p className="notice notice-error">{error}</p>}
+      {busy && <p className="notice notice-info"><span className="spinner spinner-sm" /> Pulizia in aggiornamento: le analisi usano la versione precedente fino al termine.</p>}
       {status.error && <p className="notice notice-error">Ultimo aggiornamento non riuscito: {status.error}</p>}
+      <QualityTable quality={status.qualita} />
       <div className="card pad">
         <h2 className="card-title">Report dei passi</h2>
         <ol className="plain-list numbered">{status.report.map((r, i) => <li key={i}>{r}</li>)}</ol>
       </div>
-      <div className="card pad">
-        <h2 className="card-title">Codice di pulizia (scritto dall'AI, eseguito in sandbox)</h2>
-        <pre className="code code-tall"><code>{status.codice}</code></pre>
-      </div>
+      <section className="card">
+        <div className="card-toolbar">
+          <div>
+            <h2 className="card-title">Codice di pulizia</h2>
+            <span className="muted small">Scritto dall'AI a partire da dizionario e analisi della qualità, eseguito in sandbox · {describeSource(status.fonte)}</span>
+          </div>
+          <button type="button" className="btn btn-ghost" onClick={regenerate} disabled={busy}
+            title="L'AI riscrive il codice da zero; viene accettato solo se supera i controlli">
+            {busy ? <><span className="spinner spinner-sm" /> In corso…</> : <><IconSpark size={15} /> Rigenera con l'AI</>}
+          </button>
+        </div>
+        {error && <p className="notice notice-error pad-x">{error}</p>}
+        <div className="card-body">
+          <pre className="code code-tall"><code>{status.codice}</code></pre>
+        </div>
+      </section>
     </div>
   );
 }
