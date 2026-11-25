@@ -85,3 +85,15 @@ def test_result_table_drops_meaningless_index(small_frame, tmp_path):
         assert table["columns"] == ["formato", "spesa"]
         box.run("risultato = df.sort_values('spesa', ascending=False)")
         assert box.table("risultato")["columns"] == ["formato", "spesa"]
+
+
+def test_esecuzioni_parallele_serializzate(tmp_path):
+    """Più tool call in parallelo (come fa DeepSeek) non devono far ripartire o chiudere l'interprete."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    with Sandbox({}, tmp_path, exec_timeout_s=10) as box:
+        box.run("x = 0")
+        with ThreadPoolExecutor(4) as pool:
+            results = list(pool.map(lambda i: box.run(f"x = x + 1\nprint({i})"), range(8)))
+        assert all(r.ok for r in results), [r.error for r in results]
+        assert box.run("print(x)").output.strip() == "8"

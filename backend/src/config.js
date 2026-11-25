@@ -38,7 +38,7 @@ const schema = z.object({
   BACKEND_PORT: z.coerce.number().int().default(3001),
   BACKEND_HOST: z.string().default("127.0.0.1"),
   FRONTEND_ORIGIN: commaList("http://localhost:5173"),
-  CHAT_TIMEOUT_MS: z.coerce.number().int().positive().default(90_000),
+  CHAT_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   CHAT_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(20),
   AGENT_MAX_MODEL_CALLS: z.coerce.number().int().min(2).max(15).default(6),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),

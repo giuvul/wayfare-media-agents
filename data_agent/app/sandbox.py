@@ -21,6 +21,7 @@ import io
 import multiprocessing as mp
 import os
 import pickle
+import threading
 import uuid
 from dataclasses import dataclass, field
 from multiprocessing.connection import Connection
@@ -200,7 +201,10 @@ def _worker_main(conn: Connection, frames: dict[str, str], charts_dir: str, cpu_
     charts = Path(charts_dir)
     conn.send({"ok": True, "ready": True})
     while True:
-        msg = conn.recv()
+        try:
+            msg = conn.recv()
+        except (EOFError, OSError):  # il server ha chiuso il canale: uscita pulita
+            break
         op = msg.get("op")
         if op == "close":
             break
@@ -251,6 +255,9 @@ class Sandbox:
         self._ctx = mp.get_context("spawn")
         self._proc: mp.process.BaseProcess | None = None
         self._conn: Connection | None = None
+        # Alcuni modelli chiedono più esecuzioni in parallelo (parallel tool calls): l'interprete è uno solo e
+        # con stato, come un notebook, quindi le richieste vengono eseguite una alla volta, nell'ordine.
+        self._lock = threading.RLock()
 
     def __enter__(self) -> "Sandbox":
         return self
@@ -270,6 +277,10 @@ class Sandbox:
             raise RuntimeError("Il processo di esecuzione non si è avviato.")
 
     def _request(self, msg: dict, timeout: float) -> dict:
+        with self._lock:
+            return self._request_locked(msg, timeout)
+
+    def _request_locked(self, msg: dict, timeout: float) -> dict:
         if self._proc is None or not self._proc.is_alive():
             self._start()
         assert self._conn is not None
@@ -295,9 +306,10 @@ class Sandbox:
         return ExecResult(ok=False, error=reply.get("error", "errore sconosciuto"))
 
     def table(self, name: str) -> dict | None:
-        if self._proc is None or not self._proc.is_alive():
-            return None
-        reply = self._request({"op": "table", "name": name}, 10)
+        with self._lock:
+            if self._proc is None or not self._proc.is_alive():
+                return None
+            reply = self._request_locked({"op": "table", "name": name}, 10)
         return reply.get("table") if reply.get("ok") else None
 
     def get_frame(self, name: str, extra_name: str = "") -> tuple[Any, Any]:
@@ -307,6 +319,10 @@ class Sandbox:
         return reply.get("frame"), reply.get("extra")
 
     def close(self) -> None:
+        with self._lock:
+            self._close_locked()
+
+    def _close_locked(self) -> None:
         if self._conn is not None:
             with contextlib.suppress(Exception):
                 if self._proc is not None and self._proc.is_alive():

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 from langchain.agents import create_agent
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.tools import StructuredTool
 from langgraph.errors import GraphRecursionError
 
@@ -27,6 +27,12 @@ from .llm import build_llm
 from .sandbox import Sandbox
 
 log = logging.getLogger("data_agent.agent")
+
+FINALIZE_PROMPT = (
+    "Hai esaurito i passi o il tempo a disposizione: non eseguire altro codice. Scrivi ora la risposta finale "
+    "usando SOLO i risultati già ottenuti negli output precedenti. Se il calcolo è incompleto, dillo chiaramente "
+    "e indica cosa manca."
+)
 
 SYSTEM_PROMPT = """Sei il data analyst del reparto Media Sales & Campaign Performance di Wayfare Media,
 concessionaria pubblicitaria digitale in otto aeroporti italiani. Rispondi in italiano.
@@ -150,22 +156,44 @@ class DataAnalyst:
 
             tool = StructuredTool.from_function(esegui_python, name="esegui_python", description=TOOL_DESCRIPTION)
             agent = create_agent(model=self._llm, tools=[tool], system_prompt=self._system_prompt)
+            messages: list = []
+            exhausted = False
             try:
-                state = agent.invoke(
+                # stream dello stato: se i passi finiscono, il lavoro fatto fin qui non va perso
+                for state in agent.stream(
                     {"messages": [{"role": "user", "content": task}]},
                     config={"recursion_limit": 2 * self.settings.max_agent_steps + 1},
-                )
-                messages = state["messages"]
-                result.steps = sum(isinstance(m, ToolMessage) for m in messages)
-                final = next((m for m in reversed(messages) if isinstance(m, AIMessage) and not m.tool_calls), None)
-                result.answer = _text(final) if final else ""
-                if not result.answer:
-                    result.error = "L'agente non ha prodotto una risposta finale."
+                    stream_mode="values",
+                ):
+                    messages = state["messages"]
+                    if time.monotonic() > deadline:
+                        exhausted = True
+                        break
             except GraphRecursionError:
-                result.error = f"Analisi interrotta dopo {self.settings.max_agent_steps} passi senza una conclusione."
+                exhausted = True
             except Exception as exc:  # errori del provider LLM, rete, ecc.
                 log.exception("analisi fallita")
                 result.error = f"Analisi non riuscita: {type(exc).__name__}: {exc}"[:500]
+            result.steps = sum(isinstance(m, ToolMessage) for m in messages)
+
+            final = None
+            if messages and isinstance(messages[-1], AIMessage) and not messages[-1].tool_calls:
+                final = messages[-1]
+            elif exhausted and result.steps:
+                # ultima chiamata senza strumenti: il modello deve concludere con i numeri già calcolati
+                log.info("passi o tempo esauriti dopo %d esecuzioni: risposta finale forzata", result.steps)
+                history = list(messages)
+                if isinstance(history[-1], AIMessage) and history[-1].tool_calls:
+                    history.pop()  # tool call senza risposta: l'API la rifiuterebbe
+                try:
+                    final = self._llm.invoke([("system", self._system_prompt), *history,
+                                              HumanMessage(FINALIZE_PROMPT)])
+                except Exception as exc:
+                    result.error = f"Analisi non riuscita: {type(exc).__name__}: {exc}"[:500]
+            result.answer = _text(final) if final else ""
+            if not result.answer and not result.error:
+                result.error = (f"Analisi interrotta dopo {self.settings.max_agent_steps} passi senza una conclusione."
+                                if exhausted else "L'agente non ha prodotto una risposta finale.")
             result.table = box.table("risultato")
 
         result.duration_ms = int((time.monotonic() - started) * 1000)

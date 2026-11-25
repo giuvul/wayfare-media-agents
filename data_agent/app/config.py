@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # Limiti di esecuzione (catena dei timeout: back end 90 s > richiesta 60 s > singola esecuzione 15 s)
     exec_timeout_s: float = 15.0
     request_timeout_s: float = 60.0
-    max_agent_steps: int = Field(default=8, ge=2, le=20)
+    max_agent_steps: int = Field(default=10, ge=2, le=20)
     max_concurrent_analyses: int = Field(default=2, ge=1, le=8)
     cleaning_max_attempts: int = Field(default=3, ge=1, le=5)
 
