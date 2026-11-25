@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { test } from "node:test";
+
+import { createOrchestrator, runTurn } from "../src/agent.js";
+import { createDataAgentTool } from "../src/tools/dataAgent.js";
+import { createKnowledgeBaseTool } from "../src/tools/knowledgeBase.js";
+import { ScriptedChatModel } from "./fakeModel.js";
+
+const retriever = {
+  search: async () => [{ section: "4.3", sectionTitle: "Cancellazioni", page: 5, similarity: 0.64, text: "Doc › 4.3\nDa 7 a 14 giorni: 50%." }],
+};
+const dataClient = {
+  analyze: async (task) => ({ answer: `Analisi: ${task}`, charts: [{ id: "a".repeat(32) }], table: { columns: [], rows: [] }, steps: [], duration_ms: 10 }),
+};
+const tools = [createKnowledgeBaseTool(retriever), createDataAgentTool(dataClient)];
+const call = (id, name, args) => ({ content: "", tool_calls: [{ id, name, args, type: "tool_call" }] });
+
+test("un turno RAG produce un solo step con le fonti come artifact", async () => {
+  const model = new ScriptedChatModel([call("c1", "cerca_documentazione", { query: "penali cancellazione" }), "Penale del 50% [§4.3, p. 5]."]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
+  const events = [];
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "penali?", onEvent: (e) => events.push(e) });
+  assert.equal(res.answer, "Penale del 50% [§4.3, p. 5].");
+  assert.equal(res.steps.length, 1);
+  assert.equal(res.steps[0].artifact.sources[0].section, "4.3");
+  assert.deepEqual(events.filter((e) => e !== "token"), ["tool_start", "tool_end", "final"]);
+});
+
+test("il secondo turno della stessa sessione non ripete gli step del primo", async () => {
+  const model = new ScriptedChatModel([
+    call("c1", "cerca_documentazione", { query: "penali" }), "Risposta 1",
+    call("c2", "analizza_dati", { task: "impression mensili FCO 2026" }), "Risposta 2",
+  ]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
+  const sessionId = randomUUID();
+  await runTurn({ agent, checkpointer, sessionId, message: "uno" });
+  const second = await runTurn({ agent, checkpointer, sessionId, message: "due" });
+  assert.deepEqual(second.steps.map((s) => s.tool), ["analizza_dati"]);
+  assert.equal(second.steps[0].artifact.charts.length, 1);
+  assert.equal(second.answer, "Risposta 2");
+});
+
+test("small talk: nessuno strumento", async () => {
+  const model = new ScriptedChatModel(["Ciao! Posso aiutarti con regole e dati delle campagne."]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "ciao" });
+  assert.equal(res.steps.length, 0);
+});
+
+test("errore del data agent: lo step risulta fallito ma il turno si chiude", async () => {
+  const failing = createDataAgentTool({ analyze: async () => { throw new Error("data agent HTTP 503: non pronto"); } });
+  const model = new ScriptedChatModel([call("c1", "analizza_dati", { task: "spesa totale per formato" }), "L'analisi non è disponibile."]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools: [tools[0], failing], maxModelCalls: 6 });
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "spesa?" });
+  assert.equal(res.steps[0].ok, false);
+  assert.match(res.steps[0].artifact.error, /503/);
+});
