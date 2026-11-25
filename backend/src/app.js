@@ -25,6 +25,7 @@ export function createApp(deps) {
   const activeSessions = new Set(); // un turno alla volta per conversazione: la memoria non va scritta in parallelo
 
   app.disable("x-powered-by");
+  app.set("trust proxy", config.TRUST_PROXY);
   app.use(helmet());
   app.use(cors({ origin: config.FRONTEND_ORIGIN }));
   app.use(pinoHttp({ logger: log, autoLogging: { ignore: (req) => req.url === "/api/health" || req.url.startsWith("/api/charts/") } }));

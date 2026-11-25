@@ -43,6 +43,9 @@ const schema = z.object({
   BACKEND_PORT: z.coerce.number().int().default(3001),
   BACKEND_HOST: z.string().default("127.0.0.1"),
   FRONTEND_ORIGIN: commaList("http://localhost:5173"),
+  // numero di proxy fidati davanti al back end (1 con nginx in docker compose): serve a rate limit e log per
+  // leggere il vero IP del client da X-Forwarded-For. 0 = nessun proxy, l'header viene ignorato.
+  TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
   CHAT_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   CHAT_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(20),
   AGENT_MAX_MODEL_CALLS: z.coerce.number().int().min(2).max(15).default(6),

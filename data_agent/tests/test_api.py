@@ -69,3 +69,12 @@ def test_llm_override_rejects_bad_model_name(monkeypatch):
     with client(monkeypatch) as c:
         r = c.post("/analyze", json={"task": "CPM per formato", "model": "x; rm -rf /"}, headers={"X-Internal-Token": token})
         assert r.status_code == 422
+
+
+def test_analyze_rifiuta_un_timeout_fuori_intervallo(monkeypatch):
+    """La scadenza propagata dal back end è validata: niente analisi da 1 secondo o da ore."""
+    token = main.get_settings().data_agent_token.get_secret_value()
+    with client(monkeypatch) as c:
+        for bad in (0, 1, 10_000):
+            r = c.post("/analyze", json={"task": "conta le campagne", "timeout_s": bad}, headers={"X-Internal-Token": token})
+            assert r.status_code == 422

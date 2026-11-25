@@ -28,6 +28,8 @@ from .sandbox import Sandbox
 
 log = logging.getLogger("data_agent.agent")
 
+FINALIZE_RESERVE_S = 15.0
+
 FINALIZE_PROMPT = (
     "Hai esaurito i passi o il tempo a disposizione: non eseguire altro codice. Scrivi ora la risposta finale "
     "usando SOLO i risultati già ottenuti negli output precedenti. Se il calcolo è incompleto, dillo chiaramente "
@@ -43,6 +45,9 @@ Hai uno strumento, `esegui_python`, che esegue codice Python in un interprete co
 - `df`: le righe VALIDE e già pulite dell'export campagne (base di TUTTI i KPI). {righe_valide} righe.
 - `df_completo`: tutte le righe deduplicate, comprese quelle escluse dai KPI per dato di erogazione
   mancante o errato (usalo solo per domande sulla qualità dei dati).
+La pulizia è già stata fatta e verificata: `df` applica già la regola sui giorni con erogazione mancante o
+negativa (esclusi sia dal pianificato sia dall'erogato) e ha tipi, formati e categorie corretti. Non ricontrollare
+la qualità dei dati e non usare `df_completo` se il compito non riguarda esplicitamente la qualità dei dati.
 - `pd`, `np`, `plt` (matplotlib, tema aziendale già impostato), `sns` (seaborn).
 Non leggere né scrivere file: i grafici ancora aperti a fine esecuzione vengono salvati automaticamente.
 
@@ -59,9 +64,14 @@ Prime righe:
 - La reach NON è additiva: non sommarla tra giorni o aeroporti.
 - Una campagna è conclusa se data_fine_flight <= {data_estrazione} (data di estrazione dei dati).
 - Il compito che ricevi può contenere regole di business già recuperate dalla documentazione: applicale alla lettera.
+- Se una regola o un'esclusione richiede un'informazione che nessuna colonna rappresenta (es. "campagne sospese su
+  richiesta del cliente" senza un campo di stato), non cercare di dedurla da indizi indiretti: applica le altre
+  regole e nella risposta indica quella esclusione come non verificabile con i dati disponibili.
 
 ## Come lavorare
-1. Esplora quanto serve, poi calcola. Ogni numero della risposta deve venire da codice eseguito: mai stime a memoria.
+1. Hai al massimo {max_passi} esecuzioni e poco tempo: lavora per blocchi. Schema e prime righe sono qui sopra, non
+   riesplorarli. Ogni esecuzione deve fare un passo completo (filtri, aggregazione, calcolo e stampa dei numeri che
+   servono) invece di tante esecuzioni piccole. Ogni numero della risposta deve venire da codice eseguito.
 2. Salva la tabella principale del risultato nella variabile `risultato` (DataFrame o Series, max ~50 righe):
    verrà mostrata all'utente accanto al grafico.
 3. Se il compito chiede un grafico o un andamento, o se un grafico aiuta davvero, creane UNO con matplotlib:
@@ -97,6 +107,7 @@ class AnalysisResult:
     steps: int = 0
     error: str | None = None
     duration_ms: int = 0
+    complete: bool = True  # False se passi o tempo sono finiti e la risposta è stata forzata con risultati parziali
 
 
 def _schema(df: pd.DataFrame) -> str:
@@ -131,14 +142,18 @@ class DataAnalyst:
         buffer.write(df.head(3).to_string())
         self._system_prompt = SYSTEM_PROMPT.format(
             righe_valide=len(df), schema=_schema(df), head=buffer.getvalue(),
-            data_estrazione=df["data"].max().strftime("%Y-%m-%d"),
+            data_estrazione=df["data"].max().strftime("%Y-%m-%d"), max_passi=settings.max_agent_steps,
         )
         self._llm = build_llm(settings)
 
-    def analyze(self, task: str, llm=None) -> AnalysisResult:
+    def analyze(self, task: str, llm=None, timeout_s: float | None = None) -> AnalysisResult:
+        """`timeout_s`: tempo concesso dal chiamante (il resto del suo turno), se inferiore a quello configurato."""
         llm = llm or self._llm
         started = time.monotonic()
-        deadline = started + self.settings.request_timeout_s
+        budget = min(self.settings.request_timeout_s, timeout_s or float("inf"))
+        # l'esplorazione si ferma prima della fine del budget: il controllo avviene tra un passo e l'altro, quindi
+        # serve una riserva per l'esecuzione o la chiamata al modello in corso e per la risposta finale
+        deadline = started + budget - min(FINALIZE_RESERVE_S, budget / 4)
         result = AnalysisResult(answer="")
         frames = {"df": self.data.valid_path, "df_completo": self.data.complete_path}
 
@@ -176,6 +191,7 @@ class DataAnalyst:
                 log.exception("analisi fallita")
                 result.error = f"Analisi non riuscita: {type(exc).__name__}: {exc}"[:500]
             result.steps = sum(isinstance(m, ToolMessage) for m in messages)
+            result.complete = not exhausted
 
             final = None
             if messages and isinstance(messages[-1], AIMessage) and not messages[-1].tool_calls:

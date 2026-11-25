@@ -1,0 +1,151 @@
+{
+  "descrizione": "Casi della valutazione dell'orchestrazione. route: percorsi accettati (il primo è quello ottimale); kb = cerca_documentazione, data = analizza_dati, none = nessuno strumento, a>b = prima a poi b. I valori attesi dei casi sui dati vengono da data/generator/ground_truth.json, quelli sulle regole da data/kb/wayfare_media_handbook.md.",
+  "casi": [
+    {
+      "id": "kb-cancellazione",
+      "categoria": "documentazione",
+      "turns": ["Che penale paga un cliente che cancella la campagna 10 giorni prima dell'inizio del flight?"],
+      "route": ["kb"],
+      "cite": ["4.3"],
+      "contains": ["50\\s?%"]
+    },
+    {
+      "id": "kb-opzione",
+      "categoria": "documentazione",
+      "turns": ["Per quanto tempo posso tenere in opzione una proposta commerciale?"],
+      "route": ["kb"],
+      "cite": ["4.1"],
+      "contains": ["7 giorni|sette giorni"]
+    },
+    {
+      "id": "kb-tetto-sconto",
+      "categoria": "documentazione",
+      "turns": ["Qual è lo sconto massimo complessivo che possiamo concedere sul listino?"],
+      "route": ["kb"],
+      "cite": ["3.3"],
+      "contains": ["25\\s?%"]
+    },
+    {
+      "id": "kb-alcolici",
+      "categoria": "documentazione",
+      "turns": ["Un marchio di liquori vuole comprare i Gate Screen: possiamo accettare?"],
+      "route": ["kb"],
+      "cite": ["7.2"],
+      "contains": ["Lounge", "Baggage"]
+    },
+    {
+      "id": "kb-reach",
+      "categoria": "documentazione",
+      "turns": ["Posso sommare la reach giornaliera per dare al cliente il pubblico totale della campagna?"],
+      "route": ["kb"],
+      "cite": ["6.2"],
+      "contains": ["non (è|e') additiva|non si (può|possono) sommare|non va sommata|sovrastim"]
+    },
+    {
+      "id": "kb-attribuzione",
+      "categoria": "documentazione",
+      "turns": ["Entro quanto tempo dalla scansione del QR una conversione viene attribuita alla campagna?"],
+      "route": ["kb"],
+      "cite": ["6.4"],
+      "contains": ["7 giorni|sette giorni"]
+    },
+    {
+      "id": "kb-assente",
+      "categoria": "documentazione",
+      "turns": ["Qual è la policy aziendale sui rimborsi delle spese di trasferta dei dipendenti?"],
+      "route": ["kb", "none"],
+      "contains": ["non (è|sono|viene|vengono)? ?(present|indicat|trattat|riportat|disponibil|contenut|menzionat)|non (contiene|tratta|riporta|copre|include|trovo|ho trovato)|nessuna informazione"]
+    },
+    {
+      "id": "data-cpm-formato",
+      "categoria": "dati",
+      "turns": ["Qual è il CPM effettivo per formato?"],
+      "route": ["data", "kb>data"],
+      "numbers": [10.73, 12.73, 15.5, 31.84, 8.35]
+    },
+    {
+      "id": "data-campagne",
+      "categoria": "dati",
+      "turns": ["Quante campagne distinte ci sono nel dataset?"],
+      "route": ["data"],
+      "numbers": [177]
+    },
+    {
+      "id": "data-impression-totali",
+      "categoria": "dati",
+      "turns": ["Quante impression sono state erogate in totale e quanto è la spesa complessiva?"],
+      "route": ["data"],
+      "numbers": [230630486, 3228621.91]
+    },
+    {
+      "id": "data-qr-lusso",
+      "categoria": "dati",
+      "turns": ["Per le campagne del settore Lusso, in quale aeroporto il tasso di scansione QR è più alto?"],
+      "route": ["data", "kb>data"],
+      "contains": ["CTA|Catania"],
+      "numbers": [{ "value": 0.693, "abs": 0.01 }]
+    },
+    {
+      "id": "data-grafico-mensile",
+      "categoria": "dati",
+      "turns": ["Mostrami con un grafico l'andamento mensile delle impression erogate."],
+      "route": ["data"],
+      "chart": true
+    },
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "turns": ["Quali campagne hanno diritto a un make-good e quanto valgono in totale?"],
+      "route": ["kb>data"],
+      "numbers": [{ "value": 30450.54, "tol": 0.01 }],
+      "absent": ["WM-2025-0056", "WM-2026-0023"]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "turns": ["Ci sono contratti con uno sconto fuori policy? Elencali."],
+      "route": ["kb>data"],
+      "contains": ["WM-2025-0079", "WM-2025-0022"],
+      "cite": ["3.3"]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "turns": ["Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?"],
+      "route": ["kb>data", "data>kb"],
+      "cite": ["5.4"]
+    },
+    {
+      "id": "conv-saluto",
+      "categoria": "conversazione e fuori ambito",
+      "turns": ["Ciao! Cosa sai fare?"],
+      "route": ["none"]
+    },
+    {
+      "id": "conv-meteo",
+      "categoria": "conversazione e fuori ambito",
+      "turns": ["Che tempo farà domani a Milano?"],
+      "route": ["none"]
+    },
+    {
+      "id": "conv-codice",
+      "categoria": "conversazione e fuori ambito",
+      "turns": ["Scrivimi una funzione Python che ordina una lista di numeri."],
+      "route": ["none"]
+    },
+    {
+      "id": "seguito-aeroporto",
+      "categoria": "domande di seguito",
+      "turns": ["Qual è il tasso di erogazione mensile di Venezia nel 2026?", "E per Malpensa?"],
+      "route": ["data"],
+      "task": "MXP|Malpensa"
+    },
+    {
+      "id": "seguito-penale",
+      "categoria": "domande di seguito",
+      "turns": ["Che penale c'è se il cliente cancella 20 giorni prima del flight?", "E se mancano solo 5 giorni?"],
+      "route": ["none", "kb"],
+      "contains": ["100\\s?%"]
+    }
+  ]
+}

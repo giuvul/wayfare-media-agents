@@ -1,0 +1,17 @@
+# Contesto di build: la radice del repository. Fuori dalle immagini: segreti, dipendenze installate, dati di runtime.
+.env
+.env.*
+!.env.example
+.git
+**/node_modules
+**/.venv
+**/venv
+**/__pycache__
+**/.pytest_cache
+**/dist
+storage
+chroma_data
+data_agent/cache
+data_agent/charts
+eval/results
+docs

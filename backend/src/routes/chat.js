@@ -68,6 +68,7 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
         sessionId,
         message,
         signal,
+        deadline: started + config.CHAT_TIMEOUT_MS,
         onEvent: (event, data) => {
           track(event, data);
           send(event, data);

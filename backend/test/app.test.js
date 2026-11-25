@@ -6,7 +6,7 @@ import pino from "pino";
 import { createApp } from "../src/app.js";
 import { createConversationStore, openDatabase } from "../src/storage/db.js";
 
-const config = { FRONTEND_ORIGIN: ["http://localhost:5173"], CHAT_TIMEOUT_MS: 5000, CHAT_RATE_LIMIT_PER_MIN: 100, LLM_MODEL: "test" };
+const config = { FRONTEND_ORIGIN: ["http://localhost:5173"], TRUST_PROXY: 0, CHAT_TIMEOUT_MS: 5000, CHAT_RATE_LIMIT_PER_MIN: 100, LLM_MODEL: "test" };
 
 function makeDeps(agent) {
   const deleted = [];

@@ -1,0 +1,102 @@
+# Wayfare Media Agents: tutti i servizi con un comando.
+#   cp .env.example .env   # inserisci OPENROUTER_API_KEY e DATA_AGENT_TOKEN
+#   docker compose up -d --build
+#   apri http://localhost:8080   (porta diversa: WAYFARE_PORT=9090 docker compose up -d)
+#
+# Solo il front end è pubblicato, e solo su 127.0.0.1 (l'app non ha autenticazione): back end, data agent e
+# Chroma comunicano su una rete interna. I dati che cambiano (cronologia, impostazioni, modelli locali, vettori,
+# documentazione, dataset, cache e grafici) stanno in volumi e sopravvivono a rebuild e riavvii.
+
+name: wayfare
+
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
+services:
+  chroma:
+    image: chromadb/chroma:1.5.9
+    restart: unless-stopped
+    volumes:
+      - chroma:/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8000"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  data-agent:
+    <<: *hardening
+    build: { context: ., dockerfile: data_agent/Dockerfile }
+    image: wayfare/data-agent
+    env_file: .env
+    environment:
+      # percorsi del container: prevalgono su eventuali valori locali nel .env
+      DATA_CSV_PATH: /app/data/campagne_wayfare.csv
+      DATA_DICTIONARY_PATH: /app/data/dizionario_dati.md
+      CACHE_DIR: /app/data_agent/cache
+      CHARTS_DIR: /app/data_agent/charts
+    volumes:
+      - dataset:/app/data
+      - analysis-cache:/app/data_agent/cache
+      - charts:/app/data_agent/charts
+    # al primo avvio l'AI scrive e verifica il codice di pulizia (1-2 minuti); poi resta in cache nel volume
+
+  # indicizza la documentazione in Chroma e termina (idempotente: ai riavvii salta i documenti invariati)
+  ingest:
+    image: wayfare/backend # stessa immagine del back end (costruita dal servizio backend)
+    command: ["node", "src/rag/ingest.js"]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    env_file: .env
+    environment: &backend-env
+      # indirizzi e percorsi del container: prevalgono su eventuali valori locali nel .env
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: "3001"
+      STORAGE_DIR: /app/storage
+      KB_DIR: /app/data/kb
+      MODELS_DIR: /app/storage/models
+      CHROMA_URL: http://chroma:8000
+      DATA_AGENT_URL: http://data-agent:8001
+      FRONTEND_ORIGIN: http://localhost:8080
+      TRUST_PROXY: "1"
+    volumes: &backend-volumes
+      - storage:/app/storage
+      - kb:/app/data/kb
+    depends_on:
+      chroma: { condition: service_healthy }
+    restart: "no"
+
+  backend:
+    <<: *hardening
+    build: { context: ., dockerfile: backend/Dockerfile }
+    image: wayfare/backend
+    env_file: .env
+    environment: *backend-env
+    volumes: *backend-volumes
+    depends_on:
+      ingest: { condition: service_completed_successfully }
+      data-agent: { condition: service_started }
+
+  frontend:
+    <<: *hardening
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    image: wayfare/frontend
+    tmpfs: [/tmp, /var/cache/nginx]
+    ports:
+      - "127.0.0.1:${WAYFARE_PORT:-8080}:8080"
+    depends_on:
+      backend: { condition: service_healthy }
+
+volumes:
+  chroma:
+  storage:
+  kb:
+  dataset:
+  analysis-cache:
+  charts:

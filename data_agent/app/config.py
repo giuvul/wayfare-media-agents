@@ -31,7 +31,8 @@ class Settings(BaseSettings):
     charts_dir: Path = SERVICE_DIR / "charts"
     cache_dir: Path = SERVICE_DIR / "cache"
 
-    # Limiti di esecuzione (catena dei timeout: back end 90 s > richiesta 60 s > singola esecuzione 15 s)
+    # Limiti di esecuzione (catena dei timeout: chat 120 s > richiesta 60 s > singola esecuzione 15 s);
+    # il back end può concedere meno tempo per singola richiesta (timeout_s, scadenza del turno propagata)
     exec_timeout_s: float = 15.0
     request_timeout_s: float = 60.0
     max_agent_steps: int = Field(default=10, ge=2, le=20)

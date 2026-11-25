@@ -6,6 +6,29 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 
 ## [Non rilasciato]
 
+### Aggiunto
+- Valutazione dell'orchestrazione (`eval/`): 20 casi in 5 categorie (documentazione, dati, regola applicata ai
+  dati, conversazione e fuori ambito, domande di seguito) con percorso degli strumenti atteso, citazioni, testo e
+  numeri dal ground truth; report Markdown e JSON con tempi e costo.
+- Scadenza del turno propagata fino al data agent (`timeout_s`): un turno non supera più il tempo della chat
+  anche quando l'orchestratore chiama l'analista più volte.
+- Il data agent segnala le analisi interrotte (`completa: false`) e l'orchestratore non le ripete.
+- Docker: Dockerfile per back end, data agent e front end (nginx), `compose.yaml` con indicizzazione one-shot,
+  volumi per i dati e container non privilegiati in sola lettura.
+- `TRUST_PROXY`: numero di proxy fidati davanti al back end (rate limit e log con il vero IP del client).
+
+### Modificato
+- L'orchestratore indica sempre il codice delle campagne quando le elenca e non aggiunge ipotesi non verificate.
+- L'analista lavora per blocchi di codice completi, non ricontrolla la qualità dei dati già puliti e dichiara
+  non verificabili le regole che richiedono informazioni assenti dal dataset invece di dedurle.
+
+### Corretto
+- Timeout della chat sulle domande di make-good: l'analista passava il tempo a dedurre dalle date le campagne
+  "sospese su richiesta del cliente", informazione che il dataset non contiene, e l'orchestratore ripeteva
+  l'analisi interrotta.
+
+## [5682f8e] - 2026-11-25 - Ragionamento nel suo pannello e documentazione di progetto
+
 ### Corretto
 - Il ragionamento dell'agente compariva per un istante come inizio della risposta e solo dopo si spostava nel
   pannello del ragionamento. Ora ogni strumento ha un parametro `motivo` (una frase per l'utente) che arriva
@@ -130,7 +153,8 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/ac52964...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/5682f8e...HEAD
+[5682f8e]: https://github.com/giuvul/wayfare-media-agents/commit/5682f8e
 [ac52964]: https://github.com/giuvul/wayfare-media-agents/commit/ac52964
 [1a3f038]: https://github.com/giuvul/wayfare-media-agents/commit/1a3f038
 [d9482d9]: https://github.com/giuvul/wayfare-media-agents/commit/d9482d9

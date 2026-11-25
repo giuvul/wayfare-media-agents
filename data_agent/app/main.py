@@ -108,6 +108,8 @@ class LlmOverride(BaseModel):
 class AnalyzeRequest(LlmOverride):
     task: str = Field(min_length=3, max_length=4000, description="Compito di analisi autonomo, in italiano.")
     request_id: str | None = Field(default=None, max_length=64)
+    # scadenza propagata dal back end: il tempo che resta al suo turno; l'analisi conclude entro questo limite
+    timeout_s: float | None = Field(default=None, ge=5, le=600)
 
 
 class RebuildRequest(LlmOverride):
@@ -132,6 +134,7 @@ class AnalyzeResponse(BaseModel):
     steps: int
     duration_ms: int
     error: str | None
+    completa: bool  # False: passi o tempo esauriti, la risposta riporta risultati parziali
 
 
 @app.get("/health")
@@ -154,14 +157,14 @@ async def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
     async with app.state.semaphore:
         try:
             result = await asyncio.wait_for(
-                run_in_threadpool(analyst.analyze, req.task, req.llm()), timeout=settings.request_timeout_s + 15
+                run_in_threadpool(analyst.analyze, req.task, req.llm(), req.timeout_s), timeout=settings.request_timeout_s + 15
             )
         except TimeoutError:
             raise HTTPException(status_code=504, detail="Analisi troppo lunga: riprova con una domanda più specifica.")
     return AnalyzeResponse(
         answer=result.answer, code=result.code, charts=result.charts, table=result.table,
         cleaning={"fonte": data.source, "report": data.report, **data.stats},
-        steps=result.steps, duration_ms=result.duration_ms, error=result.error,
+        steps=result.steps, duration_ms=result.duration_ms, error=result.error, completa=result.complete,
     )
 
 

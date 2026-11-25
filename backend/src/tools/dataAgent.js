@@ -6,6 +6,12 @@ import { REASON_FIELD } from "./reason.js";
 
 export const DATA_TOOL_NAME = "analizza_dati";
 
+// Scadenza del turno: l'analista riceve il tempo che resta, meno una riserva per la risposta finale dell'orchestratore.
+// Sotto il minimo non si avvia un'analisi che non potrebbe concludersi: il modello risponde con ciò che ha già.
+export const FINAL_ANSWER_RESERVE_MS = 20_000;
+export const MIN_ANALYSIS_MS = 20_000;
+const MAX_ANALYSIS_MS = 60_000;
+
 export function createDataAgentClient(config, fetchImpl = fetch) {
   const headers = { "X-Internal-Token": config.DATA_AGENT_TOKEN };
   const call = async (pathname, { method = "GET", body, query, timeoutMs = 15_000, signal } = {}) => {
@@ -30,8 +36,15 @@ export function createDataAgentClient(config, fetchImpl = fetch) {
 
   return {
     /** @param {{ signal?: AbortSignal, llm?: { model?: string, api_key?: string } }} [opts] */
-    analyze: (task, { signal, llm } = {}) =>
-      call("/analyze", { method: "POST", body: { task, ...llm }, timeoutMs: config.DATA_AGENT_TIMEOUT_MS, signal }),
+    /** @param {{ signal?: AbortSignal, llm?: object, budgetMs?: number }} [opts] budgetMs: tempo concesso all'analisi */
+    analyze: (task, { signal, llm, budgetMs } = {}) =>
+      call("/analyze", {
+        method: "POST",
+        body: { task, ...llm, ...(budgetMs ? { timeout_s: Math.max(5, Math.floor(budgetMs / 1000)) } : {}) },
+        // dopo la scadenza l'analista scrive ancora la risposta finale con i risultati parziali: margine di 15 s
+        timeoutMs: budgetMs ? Math.min(config.DATA_AGENT_TIMEOUT_MS, budgetMs + 15_000) : config.DATA_AGENT_TIMEOUT_MS,
+        signal,
+      }),
     chart: (chartId) => fetchImpl(new URL(`/charts/${chartId}`, config.DATA_AGENT_URL), { headers, signal: AbortSignal.timeout(10_000) }),
     deleteChart: (chartId) => call(`/charts/${chartId}`, { method: "DELETE" }),
     health: async () => {
@@ -57,6 +70,9 @@ export function formatAnalysis(result) {
     result.answer,
     extras.length ? `\n[Mostrati all'utente sotto la risposta: ${extras.join(" e ")}. Non ripeterli.]` : "",
     result.error ? `\n[Avviso: ${result.error}]` : "",
+    result.completa === false
+      ? "\n[Analisi interrotta per limite di passi o di tempo: NON ripeterla. Rispondi con i risultati ottenuti e indica cosa manca.]"
+      : "",
   ].join("");
 }
 
@@ -64,8 +80,14 @@ export function formatAnalysis(result) {
 export function createDataAgentTool(client, getLlmOverride = () => ({})) {
   return tool(
     async ({ task }, runConfig) => {
+      const deadline = runConfig?.configurable?.deadline;
+      const budgetMs = deadline ? Math.min(MAX_ANALYSIS_MS, deadline - Date.now() - FINAL_ANSWER_RESERVE_MS) : undefined;
+      if (budgetMs !== undefined && budgetMs < MIN_ANALYSIS_MS) {
+        const error = "tempo del turno quasi esaurito";
+        return [`ERRORE: ${error}, non c'è tempo per una nuova analisi. Rispondi con i risultati già ottenuti e indica cosa manca; l'utente può chiedere il resto in un nuovo messaggio.`, { task, error }];
+      }
       try {
-        const result = await client.analyze(task, { signal: runConfig?.signal, llm: getLlmOverride() });
+        const result = await client.analyze(task, { signal: runConfig?.signal, llm: getLlmOverride(), budgetMs });
         const { answer, charts, table, code, cleaning, steps, duration_ms: durationMs, error } = result;
         return [formatAnalysis(result), { task, answer, charts, table, code, cleaning, steps, durationMs, error }];
       } catch (err) {

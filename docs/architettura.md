@@ -143,7 +143,7 @@ chiamano più strumenti in parallelo). La policy è difesa in profondità; il co
 | Dataset pulito, codice e report | `data_agent/cache/` | Rigenerabile; scritture atomiche |
 | Grafici | `data_agent/charts/` | Eliminati con la conversazione |
 
-## 6. Catena dei timeout
+## 6. Tempi: catena dei timeout e scadenza del turno
 
 Ogni livello aspetta più a lungo di quello che chiama, così l'errore nasce dove avviene il problema e
 risale con un messaggio comprensibile:
@@ -151,7 +151,39 @@ risale con un messaggio comprensibile:
 front end 150 s > chat nel back end 120 s > chiamata al data agent 75 s > analisi 60 s (+ risposta finale
 forzata) > singola esecuzione nella sandbox 15 s.
 
-## 7. Decisioni
+I limiti fissi non bastano quando un turno chiama l'analista più volte: due analisi da 60 s superano i 120 s
+della chat e il lavoro va perso. Per questo la **scadenza del turno viene propagata** (deadline propagation):
+
+1. la chat fissa la scadenza del turno e la passa all'agente (`configurable.deadline`);
+2. lo strumento `analizza_dati` concede all'analista il tempo che resta, meno 20 s di riserva per la risposta
+   finale dell'orchestratore, e al massimo 60 s; se restano meno di 20 s non avvia l'analisi e chiede al modello
+   di rispondere con i risultati già ottenuti;
+3. il data agent riceve il budget (`timeout_s`) e smette di esplorare con una riserva (15 s, al massimo un quarto
+   del budget) per concludere il passo in corso e scrivere la risposta con i risultati parziali;
+4. un'analisi interrotta torna con `completa: false` e l'orchestratore riceve l'indicazione di non ripeterla.
+
+Un turno quindi termina sempre entro la sua scadenza, con una risposta completa o con risultati parziali
+dichiarati come tali.
+
+## 7. Deployment
+
+`compose.yaml` avvia cinque servizi: `chroma`, `data-agent`, `ingest` (indicizza la documentazione e termina),
+`backend` e `frontend` (nginx con la build statica, che inoltra `/api` al back end senza buffering per lo
+streaming). L'ordine è garantito dalle dipendenze: Chroma pronto → indicizzazione completata → back end pronto →
+front end.
+
+- Solo il front end è pubblicato, su `127.0.0.1`; gli altri servizi sono raggiungibili solo sulla rete interna.
+- Utenti non privilegiati, filesystem in sola lettura, nessuna capability, `no-new-privileges`. Si scrive solo
+  nei volumi: `storage` (SQLite e modelli locali), `kb`, `dataset`, `analysis-cache`, `charts`, `chroma`.
+  I volumi di documentazione e dataset vengono popolati dall'immagine al primo avvio, poi le modifiche fatte
+  dall'interfaccia sopravvivono a rebuild e aggiornamenti.
+- Immagini Debian (glibc) per back end e data agent, perché il runtime ONNX degli embedding locali non supporta
+  musl; i binari ONNX per macOS e Windows vengono rimossi dall'immagine.
+- Le variabili che dipendono dal container (indirizzi, porte, percorsi) sono fissate nel compose e prevalgono sul
+  `.env`, che contiene solo chiave, modelli e token.
+- `TRUST_PROXY=1`: dietro nginx il back end legge l'IP del client da `X-Forwarded-For` per il rate limit.
+
+## 8. Decisioni
 
 | Decisione | Motivazione |
 |---|---|
@@ -169,12 +201,15 @@ forzata) > singola esecuzione nella sandbox 15 s.
 | SSE consumato con `fetch` | `EventSource` non supporta POST; `fetch` permette corpo JSON, interruzione e timeout |
 | Grafici PNG (matplotlib/seaborn) | Requisito del progetto; la vista "Dati" affianca la tabella con i numeri |
 | JavaScript, non TypeScript | Scelta del progetto; i confini sono tipizzati a runtime con zod (back end) e pydantic (data agent) |
+| Scadenza del turno propagata agli strumenti | I timeout fissi per livello non impediscono a più chiamate in sequenza di superare il tempo del turno; con la scadenza ogni livello sa quanto tempo gli resta |
+| Valutazione end-to-end separata dai test | I test unitari usano un modello finto e sono gratuiti e deterministici; la qualità dell'orchestrazione si misura solo con il modello vero, su casi con risultato atteso |
 
-## 8. Limiti noti
+## 9. Limiti noti
 
 - Nessuna autenticazione degli utenti: uso locale o su rete interna.
-- Le domande che applicano regole articolate ai dati (es. make-good con esclusioni) richiedono più chiamate
-  all'analista e con i modelli più lenti possono superare il tempo massimo della chat.
+- Con i modelli economici le domande che applicano regole articolate ai dati (es. make-good con esclusioni) a
+  volte non si concludono nel tempo disponibile: la risposta lo dichiara e riporta i risultati parziali, senza
+  inventare numeri (vedi la [valutazione](../eval/README.md)).
 - I modelli di embedding locali sono un po' meno precisi di Nemotron sul primo risultato, ma recuperano quasi
   sempre la sezione giusta tra i primi passaggi passati all'agente.
 - Con un modello di embedding locale i passaggi recuperati fanno comunque parte del prompt inviato al modello

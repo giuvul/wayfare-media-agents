@@ -49,6 +49,7 @@ flowchart LR
 | Data agent | `data_agent/` | Microservizio interno: analisi della qualità, pulizia verificata, agente pandas, grafici |
 | Dati | `data/` | Dataset sintetico (9.293 righe con anomalie), dizionario dati, handbook, generatore |
 | Documentazione | `docs/` | [Architettura e decisioni](docs/architettura.md), handbook in PDF |
+| Valutazione | `eval/` | [Casi, script e risultati](eval/README.md) della valutazione dell'orchestrazione |
 
 I dettagli (flussi, pipeline RAG e di pulizia, sicurezza, scelte progettuali e loro motivazioni) sono in
 [docs/architettura.md](docs/architettura.md). Le modifiche, commit per commit, sono in [CHANGELOG.md](CHANGELOG.md).
@@ -66,7 +67,34 @@ I dettagli (flussi, pipeline RAG e di pulizia, sicurezza, scelte progettuali e l
 Tutte le dipendenze sono fissate a versioni esatte (`save-exact` per npm, `requirements.txt` generato da
 `requirements.in` per Python).
 
-## Avvio in locale
+## Avvio con Docker (consigliato)
+
+Prerequisiti: Docker con Compose v2 e una chiave [OpenRouter](https://openrouter.ai/keys).
+
+```bash
+cp .env.example .env            # inserisci OPENROUTER_API_KEY e un DATA_AGENT_TOKEN casuale (openssl rand -hex 32)
+docker compose up -d --build
+docker compose ps               # attendi che backend risulti "healthy"
+# apri http://localhost:8080
+```
+
+Al primo avvio il data agent fa scrivere all'AI il codice di pulizia del dataset e lo verifica (1-2 minuti):
+nel frattempo la chat risponde alle domande sulla documentazione e l'indicatore di stato segnala i dati in
+preparazione. Ai riavvii successivi la pulizia è già in cache.
+
+| Servizio | Ruolo | Esposto |
+|---|---|---|
+| `frontend` | nginx con la build statica, inoltra `/api` al back end | `127.0.0.1:8080` (`WAYFARE_PORT` per cambiarla) |
+| `backend` | orchestratore e API | no |
+| `ingest` | indicizza la documentazione e termina (idempotente) | no |
+| `data-agent` | analisi e pulizia dei dati | no |
+| `chroma` | vector store | no |
+
+I container girano come utenti non privilegiati, con filesystem in sola lettura, nessuna capability Linux e
+`no-new-privileges`; scrivono solo nei volumi (`storage`, `kb`, `dataset`, `analysis-cache`, `charts`,
+`chroma`). Per ripartire da zero: `docker compose down -v`.
+
+## Avvio in locale, senza Docker
 
 Prerequisiti: Node.js 24 (`.nvmrc`), Python 3.13 (`.python-version`), Docker (per ChromaDB), una chiave
 [OpenRouter](https://openrouter.ai/keys).
@@ -116,6 +144,14 @@ I test predefiniti non usano la rete né consumano crediti: il back end usa un m
 (`backend/test/fakeModel.js`) che simula anche lo streaming. Il dataset ha un ground truth
 (`data/generator/ground_truth.json`) con il numero di anomalie iniettate e i KPI attesi, usato per verificare
 sia la pulizia sia l'analisi della qualità.
+
+### Valutazione dell'orchestrazione
+
+`node eval/run.mjs` pone 20 domande realistiche all'agente in esecuzione (documentazione, dati, regole applicate
+ai dati, conversazione e fuori ambito, domande di seguito) e verifica strumenti usati, citazioni e numeri
+rispetto al ground truth. Ultimo risultato con il modello di sviluppo: **percorso corretto 20/20, casi superati
+19/20**, mediana 5,3 s per risposta, 0,05 USD in tutto. Metodo, risultati e problemi emersi in
+[eval/README.md](eval/README.md).
 
 ## Sicurezza
 

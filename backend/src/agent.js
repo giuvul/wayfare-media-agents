@@ -42,6 +42,8 @@ Regole:
 - Grafici, tabelle e codice dell'analisi sono già mostrati all'utente sotto la tua risposta: non ripeterli e non inserire link.
 - Quando usi uno strumento, spiega in una frase breve cosa stai per fare nel suo parametro \`motivo\`: l'utente la vede
   come ragionamento. Non scrivere testo prima di chiamare uno strumento: il testo libero è solo la risposta finale.
+- Quando elenchi campagne indica sempre il loro codice (es. WM-2025-0079), che identifica il contratto, insieme
+  all'inserzionista. Riporta solo ciò che l'analisi ha verificato, senza ipotesi sulle cause.
 - Risposte concise: prima la risposta diretta, poi il contesto utile. Usa elenchi solo se aiutano.`;
 
 /**
@@ -94,7 +96,7 @@ export const HOLD_CHARS = 160;
  * `thought` è il ragionamento visibile: il parametro `motivo` dello strumento o, in mancanza, il testo che il
  * modello ha scritto prima della chiamata. I token emessi appartengono sempre alla risposta.
  */
-export async function runTurn({ agent, checkpointer, sessionId, message, signal, onEvent = () => {} }) {
+export async function runTurn({ agent, checkpointer, sessionId, message, signal, deadline, onEvent = () => {} }) {
   const steps = [];
   const started = new Map();
   let answer = "";
@@ -111,7 +113,8 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
 
   const stream = await agent.stream(
     { messages: [{ role: "user", content: message }] },
-    { configurable: { thread_id: sessionId }, streamMode: ["updates", "messages"], signal },
+    // deadline (ms epoch): scadenza del turno, letta dagli strumenti per non avviare lavoro che non finirebbe in tempo
+    { configurable: { thread_id: sessionId, deadline }, streamMode: ["updates", "messages"], signal },
   );
 
   for await (const [mode, data] of stream) {
