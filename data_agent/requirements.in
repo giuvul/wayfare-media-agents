@@ -1,0 +1,14 @@
+# Dipendenze dirette del data agent (le versioni esatte sono in requirements.txt)
+fastapi
+uvicorn[standard]
+pydantic-settings
+langchain
+langchain-openai
+pandas
+numpy
+matplotlib
+seaborn
+tabulate
+# test
+pytest
+httpx
