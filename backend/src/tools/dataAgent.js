@@ -2,6 +2,7 @@
 // grafici, tabella, codice e report di pulizia viaggiano come artifact verso l'interfaccia.
 import { tool } from "langchain";
 import { z } from "zod";
+import { REASON_FIELD } from "./reason.js";
 
 export const DATA_TOOL_NAME = "analizza_dati";
 
@@ -80,6 +81,7 @@ export function createDataAgentTool(client, getLlmOverride = () => ({})) {
         "per campagna, inserzionista, settore, aeroporto, formato, segmento, data). Pulisce i dati, calcola KPI, trend " +
         "e classifiche e genera grafici. Usalo per qualsiasi domanda che richieda NUMERI sui dati.",
       schema: z.object({
+        motivo: REASON_FIELD,
         task: z
           .string()
           .min(10)

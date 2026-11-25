@@ -2,6 +2,7 @@
 // l'interfaccia riceve (come artifact, invisibile al modello) i metadati delle fonti da mostrare.
 import { tool } from "langchain";
 import { z } from "zod";
+import { REASON_FIELD } from "./reason.js";
 
 export const KB_TOOL_NAME = "cerca_documentazione";
 
@@ -34,6 +35,7 @@ export function createKnowledgeBaseTool(retriever) {
         "metodologia di misurazione, definizioni dei KPI, segmenti di audience, procedure, FAQ). " +
         "Usalo per domande su COME funziona qualcosa o QUALI regole valgono, e per recuperare le regole da applicare ai dati.",
       schema: z.object({
+        motivo: REASON_FIELD,
         query: z.string().min(3).describe("Domanda di ricerca autonoma in italiano, con i termini chiave (es. 'penali di cancellazione campagna')."),
       }),
       responseFormat: "content_and_artifact",

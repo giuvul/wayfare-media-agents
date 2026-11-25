@@ -40,7 +40,8 @@ Regole:
   subito dopo l'affermazione, nel formato [§4.3] (più sezioni: [§5.2; §5.3]).
   Se la documentazione non contiene la risposta, dillo chiaramente: non usare conoscenze generiche.
 - Grafici, tabelle e codice dell'analisi sono già mostrati all'utente sotto la tua risposta: non ripeterli e non inserire link.
-- Prima di usare uno strumento puoi scrivere una frase breve su cosa stai per fare: l'utente la vede come ragionamento.
+- Quando usi uno strumento, spiega in una frase breve cosa stai per fare nel suo parametro \`motivo\`: l'utente la vede
+  come ragionamento. Non scrivere testo prima di chiamare uno strumento: il testo libero è solo la risposta finale.
 - Risposte concise: prima la risposta diretta, poi il contesto utile. Usa elenchi solo se aiutano.`;
 
 /**
@@ -83,10 +84,15 @@ export function createAgentProvider({ settings, buildModel, tools, maxModelCalls
 const textOf = (msg) =>
   (typeof msg.content === "string" ? msg.content : msg.content.map((p) => p.text ?? "").join("")).trim();
 
+// Testo trattenuto prima di inoltrarlo come risposta: se nel frattempo arriva una chiamata a uno strumento,
+// era un ragionamento e finisce nello step invece che nella risposta. Una frase di ragionamento sta sotto questa soglia.
+export const HOLD_CHARS = 160;
+
 /**
  * Esegue un turno di conversazione ed emette eventi per l'interfaccia:
  *  tool_start {id, tool, args, thought} · tool_end {id, tool, ok, durationMs, artifact} · token {text} · final {answer, steps}
- * `thought` è il testo che il modello scrive prima di chiamare lo strumento (il suo ragionamento visibile).
+ * `thought` è il ragionamento visibile: il parametro `motivo` dello strumento o, in mancanza, il testo che il
+ * modello ha scritto prima della chiamata. I token emessi appartengono sempre alla risposta.
  */
 export async function runTurn({ agent, checkpointer, sessionId, message, signal, onEvent = () => {} }) {
   const steps = [];
@@ -97,6 +103,12 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
   const previous = await checkpointer?.getTuple({ configurable: { thread_id: sessionId } });
   const seen = new Set((previous?.checkpoint?.channel_values?.messages ?? []).map((m) => m.id).filter(Boolean));
 
+  // testo della chiamata al modello in corso: trattenuto finché non è chiaro se è risposta o ragionamento
+  let pending = { text: "", released: false, toolCall: false };
+  const resetPending = () => {
+    pending = { text: "", released: false, toolCall: false };
+  };
+
   const stream = await agent.stream(
     { messages: [{ role: "user", content: message }] },
     { configurable: { thread_id: sessionId }, streamMode: ["updates", "messages"], signal },
@@ -105,11 +117,27 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
   for await (const [mode, data] of stream) {
     if (mode === "messages") {
       const [chunk] = data;
-      if (AIMessageChunk.isInstance(chunk) && !chunk.tool_call_chunks?.length && typeof chunk.content === "string" && chunk.content) {
-        onEvent("token", { text: chunk.content });
+      if (!AIMessageChunk.isInstance(chunk)) continue;
+      if (chunk.tool_call_chunks?.length) {
+        pending.toolCall = true; // il testo trattenuto era un ragionamento: non diventa risposta
+        pending.text = "";
+        continue;
+      }
+      const text = typeof chunk.content === "string" ? chunk.content : "";
+      if (!text || pending.toolCall) continue;
+      if (pending.released) onEvent("token", { text });
+      else {
+        pending.text += text;
+        if (pending.text.length >= HOLD_CHARS) {
+          pending.released = true;
+          onEvent("token", { text: pending.text });
+        }
       }
       continue;
     }
+    // fine di una chiamata al modello (o di uno strumento): una risposta breve trattenuta viene inoltrata
+    if (!pending.toolCall && !pending.released && pending.text) onEvent("token", { text: pending.text });
+    resetPending();
     for (const update of Object.values(data ?? {})) {
       for (const msg of update?.messages ?? []) {
         if (msg.id) {
@@ -120,7 +148,8 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
           const thought = textOf(msg);
           for (const [k, call] of msg.tool_calls.entries()) {
             started.set(call.id, Date.now());
-            const step = { id: call.id, tool: call.name, args: call.args, thought: k === 0 && thought ? thought : null };
+            const reason = typeof call.args?.motivo === "string" ? call.args.motivo.trim() : "";
+            const step = { id: call.id, tool: call.name, args: call.args, thought: reason || (k === 0 && thought ? thought : null) };
             steps.push(step);
             onEvent("tool_start", step);
           }

@@ -28,6 +28,43 @@ test("un turno RAG produce un solo step con le fonti come artifact", async () =>
   assert.deepEqual(events.filter((e) => e !== "token"), ["tool_start", "tool_end", "final"]);
 });
 
+test("il ragionamento non compare mai tra i token della risposta", async () => {
+  const model = new ScriptedChatModel([
+    call("c1", "cerca_documentazione", { query: "penali cancellazione" }, "Cerco nell'handbook la regola sulle cancellazioni."),
+    "Penale del 50% [§4.3].",
+  ]);
+  model.streaming = true;
+  const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
+  const events = [];
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "penali?", onEvent: (e, d) => events.push([e, d]) });
+  const tokens = events.filter(([e]) => e === "token").map(([, d]) => d.text).join("");
+  assert.equal(tokens, "Penale del 50% [§4.3].");
+  assert.equal(res.steps[0].thought, "Cerco nell'handbook la regola sulle cancellazioni.");
+  assert.ok(events.findIndex(([e]) => e === "tool_start") < events.findIndex(([e]) => e === "token"));
+});
+
+test("il motivo passato allo strumento diventa il ragionamento dello step", async () => {
+  const model = new ScriptedChatModel([
+    call("c1", "analizza_dati", { motivo: "Calcolo il CPM effettivo per formato.", task: "CPM effettivo per formato" }),
+    "Il CPM più alto è quello del Lounge Screen.",
+  ]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "cpm?" });
+  assert.equal(res.steps[0].thought, "Calcolo il CPM effettivo per formato.");
+});
+
+test("una risposta lunga viene inoltrata in streaming, non tutta alla fine", async () => {
+  const long = "La penale dipende dai giorni di preavviso. ".repeat(10);
+  const model = new ScriptedChatModel([long]);
+  model.streaming = true;
+  const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
+  const events = [];
+  await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "penali?", onEvent: (e, d) => events.push([e, d]) });
+  const tokens = events.filter(([e]) => e === "token");
+  assert.ok(tokens.length > 10);
+  assert.equal(tokens.map(([, d]) => d.text).join(""), long);
+});
+
 test("il secondo turno della stessa sessione non ripete gli step del primo", async () => {
   const model = new ScriptedChatModel([
     call("c1", "cerca_documentazione", { query: "penali" }), "Risposta 1",
