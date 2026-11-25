@@ -1,0 +1,3 @@
+# Solo per rigenerare il PDF della knowledge base (opzionale: il PDF è già nel repository)
+markdown==3.11.3
+playwright==1.65.2

@@ -1,0 +1,227 @@
+{
+  "descrizione": "Valori veri calcolati con reference_clean() secondo le regole di data/dizionario_dati.md.",
+  "data_estrazione": "2026-09-30",
+  "righe_grezze": 9293,
+  "righe_dopo_deduplica": 9111,
+  "righe_valide_per_kpi_erogazione": 8966,
+  "anomalie_iniettate": {
+    "impression_erogate_mancanti": 109,
+    "impression_erogate_negative": 36,
+    "spesa_mancante": 137,
+    "scansioni_qr_maggiori_di_impression": 27,
+    "dwell_fuori_range": 27,
+    "segmento_mancante": 91,
+    "cpm_come_testo_valuta": 1367,
+    "date_formato_gg_mm_aaaa": 1822,
+    "date_formato_testuale": 729,
+    "settore_scritto_diversamente": 547,
+    "aeroporto_scritto_diversamente": 182,
+    "creativita_flag_testuale": 456,
+    "righe_duplicate": 182
+  },
+  "n_campagne": 177,
+  "totale_impression_erogate": 230630486,
+  "totale_spesa_eur": 3228621.91,
+  "cpm_effettivo_per_formato": {
+    "Baggage Claim Wall": 10.73,
+    "Digital Totem": 12.73,
+    "Gate Screen": 15.5,
+    "Lounge Screen": 31.84,
+    "Wi-Fi Portal": 8.35
+  },
+  "impression_erogate_per_mese": {
+    "2025-01": 6063856,
+    "2025-02": 2528215,
+    "2025-03": 5455991,
+    "2025-04": 12724517,
+    "2025-05": 11168086,
+    "2025-06": 15648680,
+    "2025-07": 23476990,
+    "2025-08": 12344113,
+    "2025-09": 11228723,
+    "2025-10": 15509761,
+    "2025-11": 6530061,
+    "2025-12": 14887479,
+    "2026-01": 5450820,
+    "2026-02": 2506930,
+    "2026-03": 5959748,
+    "2026-04": 9122639,
+    "2026-05": 13773233,
+    "2026-06": 16575468,
+    "2026-07": 9300297,
+    "2026-08": 20784473,
+    "2026-09": 9590406
+  },
+  "tasso_qr_lusso_per_aeroporto_pct": {
+    "CTA": 0.693,
+    "FCO": 0.592,
+    "MXP": 0.498,
+    "VCE": 0.418,
+    "LIN": 0.345,
+    "BLQ": 0.331,
+    "BGY": 0.33,
+    "NAP": 0.32
+  },
+  "tasso_erogazione_vce_per_mese": {
+    "2025-01": 1.035,
+    "2025-02": 1.039,
+    "2025-03": 1.023,
+    "2025-04": 1.045,
+    "2025-05": 1.024,
+    "2025-06": 1.009,
+    "2025-07": 1.016,
+    "2025-08": 1.05,
+    "2025-09": 0.997,
+    "2025-10": 0.988,
+    "2025-11": 0.973,
+    "2025-12": 0.954,
+    "2026-01": 0.831,
+    "2026-02": 0.802,
+    "2026-03": 0.752,
+    "2026-04": 0.978,
+    "2026-05": 0.872,
+    "2026-06": 0.898,
+    "2026-07": 0.977,
+    "2026-08": 0.981,
+    "2026-09": 1.001
+  },
+  "make_good": {
+    "regola": "campagne concluse entro la data di estrazione, erogato < 95% del pianificato, creatività consegnate in tempo",
+    "campagne_aventi_diritto": {
+      "WM-2026-0096": {
+        "inserzionista": "Caffè Montano",
+        "formato": "Gate Screen",
+        "tasso_erogazione": 0.9157,
+        "valore_eur": 5381.81
+      },
+      "WM-2025-0088": {
+        "inserzionista": "Vigna Antica",
+        "formato": "Baggage Claim Wall",
+        "tasso_erogazione": 0.8424,
+        "valore_eur": 4541.88
+      },
+      "WM-2025-0173": {
+        "inserzionista": "Nordvik Outdoor",
+        "formato": "Gate Screen",
+        "tasso_erogazione": 0.8826,
+        "valore_eur": 2690.76
+      },
+      "WM-2025-0076": {
+        "inserzionista": "Orizzonte Viaggi",
+        "formato": "Lounge Screen",
+        "tasso_erogazione": 0.846,
+        "valore_eur": 2424.32
+      },
+      "WM-2026-0055": {
+        "inserzionista": "Atelier Brera",
+        "formato": "Digital Totem",
+        "tasso_erogazione": 0.8852,
+        "valore_eur": 2375.19
+      },
+      "WM-2025-0010": {
+        "inserzionista": "Pixelia Tech",
+        "formato": "Digital Totem",
+        "tasso_erogazione": 0.9032,
+        "valore_eur": 2301.06
+      },
+      "WM-2025-0017": {
+        "inserzionista": "Banca Meridiana",
+        "formato": "Lounge Screen",
+        "tasso_erogazione": 0.8986,
+        "valore_eur": 1579.71
+      },
+      "WM-2025-0043": {
+        "inserzionista": "Maison Verbena",
+        "formato": "Digital Totem",
+        "tasso_erogazione": 0.8812,
+        "valore_eur": 1543.14
+      },
+      "WM-2025-0121": {
+        "inserzionista": "Elettra Motors",
+        "formato": "Gate Screen",
+        "tasso_erogazione": 0.903,
+        "valore_eur": 1263.42
+      },
+      "WM-2025-0124": {
+        "inserzionista": "Maison Verbena",
+        "formato": "Lounge Screen",
+        "tasso_erogazione": 0.846,
+        "valore_eur": 1219.49
+      },
+      "WM-2026-0040": {
+        "inserzionista": "Vigna Antica",
+        "formato": "Baggage Claim Wall",
+        "tasso_erogazione": 0.8825,
+        "valore_eur": 1069.46
+      },
+      "WM-2025-0061": {
+        "inserzionista": "Lumen Beauty",
+        "formato": "Baggage Claim Wall",
+        "tasso_erogazione": 0.9279,
+        "valore_eur": 994.3
+      },
+      "WM-2026-0156": {
+        "inserzionista": "Orizzonte Viaggi",
+        "formato": "Gate Screen",
+        "tasso_erogazione": 0.9122,
+        "valore_eur": 861.54
+      },
+      "WM-2026-0021": {
+        "inserzionista": "Vigna Antica",
+        "formato": "Baggage Claim Wall",
+        "tasso_erogazione": 0.9417,
+        "valore_eur": 637.01
+      },
+      "WM-2026-0003": {
+        "inserzionista": "Essenza Profumi",
+        "formato": "Lounge Screen",
+        "tasso_erogazione": 0.8903,
+        "valore_eur": 426.02
+      },
+      "WM-2025-0175": {
+        "inserzionista": "Caffè Montano",
+        "formato": "Wi-Fi Portal",
+        "tasso_erogazione": 0.8722,
+        "valore_eur": 412.67
+      },
+      "WM-2026-0128": {
+        "inserzionista": "Essenza Profumi",
+        "formato": "Wi-Fi Portal",
+        "tasso_erogazione": 0.8494,
+        "valore_eur": 387.31
+      },
+      "WM-2024-0016": {
+        "inserzionista": "TelcoNova",
+        "formato": "Wi-Fi Portal",
+        "tasso_erogazione": 0.8607,
+        "valore_eur": 341.45
+      }
+    },
+    "valore_totale_eur": 30450.54,
+    "escluse_per_creativita_in_ritardo": [
+      "WM-2025-0056",
+      "WM-2025-0060",
+      "WM-2025-0070",
+      "WM-2025-0078",
+      "WM-2025-0084",
+      "WM-2025-0109",
+      "WM-2025-0137",
+      "WM-2025-0167",
+      "WM-2026-0023",
+      "WM-2026-0063",
+      "WM-2026-0091",
+      "WM-2026-0133",
+      "WM-2026-0150",
+      "WM-2026-0165"
+    ]
+  },
+  "campagne_sconto_fuori_policy": {
+    "WM-2025-0079": 0.32,
+    "WM-2025-0119": 0.32,
+    "WM-2026-0166": 0.32,
+    "WM-2026-0156": 0.32,
+    "WM-2025-0176": 0.3,
+    "WM-2025-0127": 0.3,
+    "WM-2025-0022": 0.29
+  }
+}

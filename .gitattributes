@@ -1,0 +1,5 @@
+# Line ending coerenti: gli script eseguiti nei container devono avere LF anche se clonati su Windows
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.csv text eol=lf
