@@ -6,6 +6,15 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 
 ## [Non rilasciato]
 
+### Modificato
+- Modello predefinito Claude Haiku 5.5 (`LLM_MODEL`), con riserva DeepSeek V4.1 Flash di un altro fornitore
+  (`LLM_FALLBACK_MODELS`). Valutazione completa ripetuta con la configurazione finale: 20/20 casi, tutte le
+  chiamate servite da Haiku, 0,051 USD.
+- README, `.env.example` e Impostazioni spiegano che va inserita una API key di OpenRouter (nel `.env` o
+  dall'interfaccia) e che con il BYOK di OpenRouter si possono usare chiavi già esistenti di altri fornitori.
+
+## [ddd0934] - 2026-11-26 - Revisione completa: sicurezza, errori, robustezza dei turni, lint
+
 Revisione completa del sistema (front end, back end, data agent, configurazione), con revisori indipendenti.
 
 ### Sicurezza
@@ -263,7 +272,8 @@ Revisione completa del sistema (front end, back end, data agent, configurazione)
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/3f4d1d6...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/ddd0934...HEAD
+[ddd0934]: https://github.com/giuvul/wayfare-media-agents/commit/ddd0934
 [3f4d1d6]: https://github.com/giuvul/wayfare-media-agents/commit/3f4d1d6
 [c034b4d]: https://github.com/giuvul/wayfare-media-agents/commit/c034b4d
 [c0a3e01]: https://github.com/giuvul/wayfare-media-agents/commit/c0a3e01

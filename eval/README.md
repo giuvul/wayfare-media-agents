@@ -37,6 +37,25 @@ servito ogni chiamata del turno, e un caso servito da un modello di riserva non 
 
 ## Risultati
 
+### Modello finale: Claude Haiku 5.5
+
+Configurazione predefinita dell'app: `anthropic/claude-haiku-5.5` per orchestratore e analista, riserva
+`deepseek/deepseek-v4.1-flash` (altro fornitore) attiva, embedding Nemotron 3.5 Embed. Il controllo del modello
+effettivo conferma che tutte le chiamate sono state servite da Haiku. Report completo:
+[`results/202611261137_anthropic-claude-haiku-5.5.md`](results/202611261137_anthropic-claude-haiku-5.5.md).
+
+| Misura | Risultato |
+|---|---|
+| Percorso degli strumenti corretto | **20/20** (ottimale 18/20) |
+| Casi con tutti i controlli superati | **20/20** |
+| Tempo per risposta | mediana 4,4 s, 90° percentile 38,4 s, massimo 38,5 s |
+| Costo dell'intera valutazione | 0,051 USD |
+
+Haiku è stato scelto dopo il [confronto tra modelli](#confronto-tra-modelli): è l'unico dei tre a superare tutti
+i casi e tutte le ripetizioni, a un costo di pochi centesimi per l'intera valutazione.
+
+### Sviluppo: DeepSeek V4.1 Flash
+
 Modello `deepseek/deepseek-v4.1-flash` (il modello economico usato in sviluppo), embedding Nemotron 3.5 Embed.
 Report completo: [`results/202611251813_deepseek-deepseek-v4.1-flash.md`](results/202611251813_deepseek-deepseek-v4.1-flash.md).
 

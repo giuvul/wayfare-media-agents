@@ -47,6 +47,9 @@ function ApiKeyCard({ settings, onSaved }) {
       <p className="muted small">
         La chiave viene verificata con OpenRouter prima del salvataggio, resta solo sul server (database locale) e non
         viene mai più mostrata per intero. Vale per l'orchestratore, l'analista dati e la ricerca nella documentazione.
+        Con il{" "}
+        <a href="https://openrouter.ai/docs/guides/overview/auth/byok" target="_blank" rel="noreferrer">BYOK di OpenRouter</a>{" "}
+        puoi collegare all'account chiavi di altri fornitori (Anthropic, OpenAI, …) che hai già.
       </p>
       {state.ok && <p className="notice notice-ok">{state.ok}</p>}
       {state.error && <p className="notice notice-error">{state.error}</p>}

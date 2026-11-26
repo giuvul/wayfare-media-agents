@@ -66,10 +66,24 @@ I dettagli (flussi, pipeline RAG e di pulizia, sicurezza, scelte progettuali e l
 | Back end | Node.js 24, Express 5.3.0, LangChain.js (`langchain` 1.6.6, `@langchain/langgraph` 1.7.5), zod 4.6.7, pino 10.4.0, better-sqlite3 12.11.1, Transformers.js 4.3.2 |
 | Data agent | Python 3.13, FastAPI 0.165.0, LangChain 1.5.2, pandas 3.1.1, matplotlib 3.11.2, seaborn 0.13.2 |
 | Vector store | ChromaDB 1.5.9 (client JS 3.5.0), spazio coseno |
-| Modelli | Via OpenRouter (vendor-agnostic). In sviluppo: DeepSeek V4.1 Flash, riserva gpt-oss-120b; embedding Nemotron 3.5 Embed |
+| Modelli | Via OpenRouter (vendor-agnostic). Predefinito Claude Haiku 5.5, riserva DeepSeek V4.1 Flash (altro fornitore); embedding Nemotron 3.5 Embed |
 
 Tutte le dipendenze sono fissate a versioni esatte (`save-exact` per npm, `requirements.txt` generato da
 `requirements.in` per Python).
+
+## Chiave API
+
+Per usare l'app va inserita una API key di [OpenRouter](https://openrouter.ai/keys): è l'unico servizio esterno, e
+con una sola chiave dà accesso ai modelli di tutti i fornitori (orchestratore, analista dati ed embedding).
+La chiave si inserisce in `OPENROUTER_API_KEY` nel file `.env` oppure, ad app avviata, in **Impostazioni**: viene
+verificata con OpenRouter, resta solo sul server e non viene mai restituita al browser.
+
+Chi ha già chiavi di altri fornitori (Anthropic, OpenAI, Google, ...) può collegarle all'account OpenRouter con
+il [BYOK](https://openrouter.ai/docs/guides/overview/auth/byok) (*Bring Your Own Key*): l'app continua a usare la chiave
+OpenRouter, mentre le chiamate ai modelli di quei fornitori vengono addebitate sulle loro chiavi (secondo le
+condizioni di OpenRouter, che può applicare una piccola commissione).
+
+Una valutazione completa (20 casi) con il modello predefinito costa pochi centesimi di dollaro.
 
 ## Avvio con Docker (consigliato)
 
@@ -105,7 +119,7 @@ Prerequisiti: Node.js 24 (`.nvmrc`), Python 3.13 (`.python-version`), Docker (pe
 
 ```bash
 # 1. Configurazione
-cp .env.example .env            # inserisci OPENROUTER_API_KEY e un DATA_AGENT_TOKEN casuale
+cp .env.example .env            # inserisci una API key di OpenRouter e un DATA_AGENT_TOKEN casuale
 
 # 2. ChromaDB
 docker run -d --name chroma -p 127.0.0.1:8000:8000 -v "$PWD/chroma_data:/data" chromadb/chroma:1.5.9
@@ -158,8 +172,10 @@ sia la pulizia sia l'analisi della qualità.
 `node eval/run.mjs` pone 20 domande realistiche all'agente in esecuzione (documentazione, dati, regole applicate
 ai dati, conversazione e fuori ambito, domande di seguito) e verifica strumenti usati, citazioni e numeri
 rispetto al ground truth. Confronto tra tre modelli economici di tre fornitori, a parità di casi: Claude Haiku
-5.5 supera 20/20 casi, DeepSeek V4.1 Flash 19/20, GPT-6 Luna 17/20; ogni giro costa da 0,01 a 0,06 USD. Metodo,
-risultati e problemi emersi in [eval/README.md](eval/README.md).
+5.5 supera 20/20 casi, DeepSeek V4.1 Flash 19/20, GPT-6 Luna 17/20; ogni giro costa da 0,01 a 0,06 USD. Haiku è
+diventato il modello predefinito e, nella configurazione finale (con la riserva attiva), supera 20/20 casi con
+risposta mediana in 4,4 s e 0,05 USD per l'intera valutazione. Metodo, risultati e problemi emersi in
+[eval/README.md](eval/README.md).
 
 ## Sicurezza
 

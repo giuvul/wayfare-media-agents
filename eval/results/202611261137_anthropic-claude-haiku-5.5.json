@@ -1,0 +1,1831 @@
+{
+  "summary": {
+    "data": "2026-11-26T11:37:01.218Z",
+    "modello": "anthropic/claude-haiku-5.5",
+    "casi": 20,
+    "superati": 20,
+    "percorso_corretto": 20,
+    "percorso_ottimale": 18,
+    "errori": 0,
+    "tempo_mediano_s": 4.441,
+    "tempo_p90_s": 38.431,
+    "costo_usd": 0.0508
+  },
+  "results": [
+    {
+      "id": "kb-cancellazione",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §4.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /50\\s?%/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 3780,
+      "turns": [
+        {
+          "message": "Che penale paga un cliente che cancella la campagna 10 giorni prima dell'inizio del flight?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook le penali di cancellazione previste per il preavviso di 10 giorni.",
+              "input": "penali di cancellazione campagna giorni prima dell'inizio del flight",
+              "ok": true,
+              "ms": 357,
+              "sources": [
+                "4.3",
+                "4.4",
+                "5.1",
+                "12",
+                "2.6"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Con una cancellazione 10 giorni prima dell'inizio del flight si applica una penale del **50%** del valore residuo, calcolato sul valore pianificato della campagna (impression pianificate per CPM contrattuale) [§4.3].\n\nIl preavviso di 10 giorni rientra infatti nella fascia \"da 7 a 14 giorni prima\". Per riferimento, le altre fasce sono: nessuna penale oltre 30 giorni, 25% tra 15 e 30 giorni, 100% sotto i 7 giorni o a flight già iniziato [§4.3].\n\nLa cancellazione deve avvenire con preavviso scritto [§4.3].",
+          "error": null,
+          "firstTokenMs": 3245,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692703-3LtJO1WtJej7qQVEOurY",
+              "gen-1795692705-6LFZMs6d3dk8KaJQrsTs"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 3780,
+          "served": {
+            "gen-1795692703-3LtJO1WtJej7qQVEOurY": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.000316
+            },
+            "gen-1795692705-6LFZMs6d3dk8KaJQrsTs": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005136
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "kb-opzione",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §4.1",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /7 giorni|sette giorni/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 3618,
+      "turns": [
+        {
+          "message": "Per quanto tempo posso tenere in opzione una proposta commerciale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la durata dell'opzione sulle proposte commerciali.",
+              "input": "durata opzione proposta commerciale validità preventivo",
+              "ok": true,
+              "ms": 371,
+              "sources": [
+                "4.1",
+                "1.1",
+                "6",
+                "7.3",
+                "5.3"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Una proposta commerciale può essere messa in opzione per **7 giorni di calendario**. Trascorso questo periodo senza firma, l'opzione decade automaticamente e l'inventario torna disponibile [§4.1].\n\nLa prenotazione diventa definitiva solo con la firma dell'ordine di inserzione (IO), che riporta flight, aeroporti, formati, impression pianificate, CPM contrattuale e segmento di audience [§4.1].",
+          "error": null,
+          "firstTokenMs": 2615,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692707-PqVr6yKERlfACCOBlwPE",
+              "gen-1795692708-E3RsMX2QMSIKeRHw2zdI"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 3618,
+          "served": {
+            "gen-1795692707-PqVr6yKERlfACCOBlwPE": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.000309
+            },
+            "gen-1795692708-E3RsMX2QMSIKeRHw2zdI": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004207
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "kb-tetto-sconto",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /25\\s?%/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 4068,
+      "turns": [
+        {
+          "message": "Qual è lo sconto massimo complessivo che possiamo concedere sul listino?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nella documentazione la policy sugli sconti massimi applicabili al listino CPM.",
+              "input": "sconto massimo complessivo listino CPM policy sconti",
+              "ok": true,
+              "ms": 451,
+              "sources": [
+                "3.3",
+                "3",
+                "3.2",
+                "3.1",
+                "6.5"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Lo sconto complessivo massimo sul listino è del **25%**: nessun contratto può scendere sotto il 75% del listino [§3.3]. Questo tetto vale anche con approvazione, e un contratto con CPM contrattuale inferiore al 75% del listino è fuori policy e va segnalato al Controllo di Gestione per la revisione trimestrale dei margini [§3.3].\n\nLo sconto si compone così:\n- **Sconto volume** [§3.2]: 10% da 1 milione di impression pianificate, 15% da 3 milioni, 20% da 6 milioni. Si calcola sul totale della campagna, su tutti gli aeroporti e tutti i giorni del flight.\n- **Sconto aggiuntivo** [§3.3]: il commerciale può concedere fino a 5 punti percentuali oltre lo sconto volume, ma solo con approvazione scritta dell'Head of Sales (ad esempio per accordi annuali o lanci strategici).\n\nIl CPM contrattuale, cioè il listino meno gli sconti, è quello riportato nell'ordine di inserzione e serve sia per la fatturazione sia per il calcolo dei make-good [§3.3].",
+          "error": null,
+          "firstTokenMs": 2831,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692710-tQAlSgsoZ0bDznZoA5BV",
+              "gen-1795692712-aE7bVlASdhVYdN7yfQde"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 4068,
+          "served": {
+            "gen-1795692712-aE7bVlASdhVYdN7yfQde": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005786
+            },
+            "gen-1795692710-tQAlSgsoZ0bDznZoA5BV": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003118
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "kb-alcolici",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §7.2",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /Lounge/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /Baggage/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 4441,
+      "turns": [
+        {
+          "message": "Un marchio di liquori vuole comprare i Gate Screen: possiamo accettare?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nella documentazione la policy sui contenuti per la pubblicità di alcolici e le eventuali limitazioni sui Gate Screen.",
+              "input": "pubblicità alcolici liquori policy contenuti restrizioni Gate Screen",
+              "ok": true,
+              "ms": 353,
+              "sources": [
+                "7.2",
+                "7.1",
+                "2.1",
+                "3.1",
+                "10"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "No, con le regole attuali non possiamo accettare la campagna di liquori sui Gate Screen. La pubblicità di alcolici è ammessa solo nei formati Lounge Screen e Baggage Claim Wall, con un messaggio di consumo responsabile [§7.2].\n\nIl brand può valutare questi formati:\n- **Lounge Screen**: CPM di listino 32,00 euro [§3.1]\n- **Baggage Claim Wall**: CPM di listino 12,00 euro [§3.1]\n\nLa creatività dovrà includere il messaggio di consumo responsabile [§7.2].",
+          "error": null,
+          "firstTokenMs": 3989,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692714-vSnONzBTZAtPhenDOdlb",
+              "gen-1795692716-NwTBQIaXChCSM4vz5hOz"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 4441,
+          "served": {
+            "gen-1795692716-NwTBQIaXChCSM4vz5hOz": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0006024
+            },
+            "gen-1795692714-vSnONzBTZAtPhenDOdlb": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.000364
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "kb-reach",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §6.2",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /non (è|e') additiva|non si (può|possono) sommare|non va sommata|sovrastim/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 3780,
+      "turns": [
+        {
+          "message": "Posso sommare la reach giornaliera per dare al cliente il pubblico totale della campagna?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nella metodologia la definizione di reach e le regole su come aggregarla tra giorni.",
+              "input": "definizione reach metodologia misurazione aggregazione giornaliera deduplicazione pubblico unico campagna",
+              "ok": true,
+              "ms": 389,
+              "sources": [
+                "6.2",
+                "6.7",
+                "6",
+                "1",
+                "6.1"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "No, non è corretto. La reach non è additiva: lo stesso passeggero può essere raggiunto in più giorni o in più aeroporti (ad esempio all'andata e al ritorno), quindi la somma delle reach giornaliere sovrastima il pubblico reale [§6.2].\n\nPer dare al cliente un'indicazione corretta:\n- **Per confrontare periodi o aeroporti** si usano le impression, che sono la base di fatturazione e sono certificate dall'ad server [§6.1; §6.2].\n- **La frequenza media** si calcola come impression diviso reach sullo stesso giorno [§6.2].\n- **Il report di fine campagna** include la reach giornaliera media, non un totale di pubblico unico della campagna [§6.7].\n\nSe mi indichi la campagna (codice WM-...) o l'inserzionista, posso chiedere all'analista di calcolare le impression erogate e la reach giornaliera media per quel periodo.",
+          "error": null,
+          "firstTokenMs": 2877,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692719-0DuPheMlimiZyvcKrdfG",
+              "gen-1795692721-qkcxtXMzf0GiLUV7OJ3B"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 3780,
+          "served": {
+            "gen-1795692721-qkcxtXMzf0GiLUV7OJ3B": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005312
+            },
+            "gen-1795692719-0DuPheMlimiZyvcKrdfG": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003587
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "kb-attribuzione",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §6.4",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /7 giorni|sette giorni/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2847,
+      "turns": [
+        {
+          "message": "Entro quanto tempo dalla scansione del QR una conversione viene attribuita alla campagna?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la regola sulla finestra di attribuzione delle conversioni dopo la scansione del QR.",
+              "input": "finestra di attribuzione conversioni dopo scansione QR tempo massimo",
+              "ok": true,
+              "ms": 372,
+              "sources": [
+                "6.4",
+                "12",
+                "6.7",
+                "8",
+                "2.6"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "La conversione viene attribuita alla campagna se l'azione del cliente (acquisto, riscatto coupon o registrazione) avviene **entro 7 giorni dalla scansione del QR**, sullo stesso dispositivo [§6.4].\n\nLe conversioni da QR code sono misurate solo sulle pagine del cliente che hanno accettato il tracciamento secondo la propria informativa privacy [§8].",
+          "error": null,
+          "firstTokenMs": 2564,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692723-woT2Wk9ths9dOV32cusl",
+              "gen-1795692724-6v5PT1x2XOXBzrHVEpq3"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 2847,
+          "served": {
+            "gen-1795692724-6v5PT1x2XOXBzrHVEpq3": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004971
+            },
+            "gen-1795692723-woT2Wk9ths9dOV32cusl": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003348
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "kb-assente",
+      "categoria": "documentazione",
+      "route": "kb",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb (atteso: kb | none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /non (è|sono|viene|vengono)? ?(present|indicat|trattat|riportat|disponibil|contenut|menzionat)|non (contiene|tratta|riporta|copre|include|trovo|ho trovato)|nessuna informazione/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 4296,
+      "turns": [
+        {
+          "message": "Qual è la policy aziendale sui rimborsi delle spese di trasferta dei dipendenti?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nella documentazione aziendale la policy sui rimborsi delle spese di trasferta.",
+              "input": "policy rimborso spese di trasferta dipendenti",
+              "ok": true,
+              "ms": 340,
+              "sources": [
+                "4.4",
+                "9",
+                "2.5",
+                "12",
+                "11"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "Non ho trovato nella documentazione aziendale una policy sui rimborsi delle spese di trasferta dei dipendenti. I passaggi recuperati riguardano altri temi (modifiche al piano, segmenti di audience, formati, FAQ per i media buyer e gestione dei reclami), quindi non posso indicarti limiti, massimali o procedure di rimborso.\n\nPer questa informazione ti consiglio di rivolgerti al reparto amministrativo o alle risorse umane, che possono fornirti la policy interna aggiornata.\n\nPosso invece aiutarti con dati e regole relativi alle campagne pubblicitarie, ad esempio performance, CPM, condizioni di modifica o gestione dei reclami.",
+          "error": null,
+          "firstTokenMs": 3502,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692726-vltQAZYYXeqD0TWunrkz",
+              "gen-1795692728-Btz9qmcOeuObOs7bCbqE"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 4296,
+          "served": {
+            "gen-1795692728-Btz9qmcOeuObOs7bCbqE": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005212
+            },
+            "gen-1795692726-vltQAZYYXeqD0TWunrkz": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003814
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-cpm-formato",
+      "categoria": "dati",
+      "route": "kb>data",
+      "optimal": false,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: data | kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 10.73",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 12.73",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 15.5",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 31.84",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 8.35",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 23509,
+      "turns": [
+        {
+          "message": "Qual è il CPM effettivo per formato?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco la definizione di CPM effettivo per calcolarlo correttamente rispetto al listino.",
+              "input": "definizione CPM effettivo CPM listino calcolo per formato",
+              "ok": true,
+              "ms": 318,
+              "sources": [
+                "6.5",
+                "3",
+                "3.1",
+                "3.3",
+                "5.2"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": null,
+              "input": "Calcola il CPM effettivo medio per formato di campagna sull'intero dataset (gen 2025 - set 2026). Il CPM effettivo va calcolato come spesa totale divisa per impression erogate, moltiplicato per 1000, aggregando per formato (somma spesa / somma impression erogate * 1000, non media dei CPM di riga). Riporta una tabella con formato, impression erogate, spesa, CPM effettivo, ordinata per CPM decrescente, e indica il numero di campagne per formato. Se il dataset contiene già un CPM effettivo, verificane la coerenza con il calcolo. Pulisci eventuali righe duplicate o con valori mancanti prima del calcolo e segnalalo.",
+              "ok": true,
+              "ms": 15519,
+              "charts": 0
+            }
+          ],
+          "answer": "Il CPM effettivo per formato, calcolato come spesa totale diviso impression erogate per 1.000, è più alto per i Lounge Screen (31,84 €) e più basso per il Wi-Fi Portal (8,35 €). Il CPM complessivo sull'intero periodo gen 2025 - set 2026 è 14,00 € [§6.5].\n\n- **Lounge Screen:** 31,84 € (29 campagne), con 8,7 mln di impression erogate ma il CPM più alto.\n- **Gate Screen:** 15,50 € (51 campagne), con 110,3 mln di impression erogate e 1,71 mln € di spesa.\n- **Digital Totem:** 12,73 € (40 campagne).\n- **Baggage Claim Wall:** 10,73 € (30 campagne).\n- **Wi-Fi Portal:** 8,35 € (27 campagne).\n\nIl CPM effettivo va calcolato come rapporto tra spesa e impression totali, non come media dei CPM di riga [§6.5]. Il listino è unico per tutta la rete e prevede Gate Screen 18,00 €, Digital Totem 14,00 €, Lounge Screen 32,00 €, Wi-Fi Portal 9,00 € e Baggage Claim Wall 12,00 € [§3.1]. Il dataset non contiene un CPM effettivo da confrontare, quindi il valore è stato ricalcolato. Non ci sono righe duplicate né valori mancanti nelle colonne necessarie. Sono state escluse 145 righe con dato di erogazione mancante o negativo.",
+          "error": null,
+          "firstTokenMs": 21995,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692730-zKbjjtbYMxyFx0P2SbG1",
+              "gen-1795692749-hl3cKAXPQ0lzMSw2iRtN"
+            ],
+            "analista": [
+              "gen-1795692733-WDJjuXy9PbKYtX7YyhGp",
+              "gen-1795692738-tjs7i1GgLtFr5CmaiWcP",
+              "gen-1795692740-fZutiD4fmbLqGHZ2qcQI"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 23509,
+          "served": {
+            "gen-1795692730-zKbjjtbYMxyFx0P2SbG1": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005485
+            },
+            "gen-1795692749-hl3cKAXPQ0lzMSw2iRtN": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.001
+            },
+            "gen-1795692738-tjs7i1GgLtFr5CmaiWcP": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005868
+            },
+            "gen-1795692740-fZutiD4fmbLqGHZ2qcQI": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0013778
+            },
+            "gen-1795692733-WDJjuXy9PbKYtX7YyhGp": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0007337
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-campagne",
+      "categoria": "dati",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 177",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 10808,
+      "turns": [
+        {
+          "message": "Quante campagne distinte ci sono nel dataset?",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Conto le campagne distinte presenti nel dataset delle campagne Wayfare Media (gen 2025 - set 2026).",
+              "input": "Nel dataset delle campagne Wayfare Media (periodo gen 2025 - set 2026), conta il numero di campagne distinte, cioè i codici campagna univoci (formato tipo WM-2025-0079). Pulisci eventuali duplicati di righe o codici con spazi/maiuscole diverse prima di contare. Restituisci il numero totale di campagne distinte e, se possibile, quante sono per anno di inizio.",
+              "ok": true,
+              "ms": 7511,
+              "charts": 0
+            }
+          ],
+          "answer": "Nel dataset ci sono **177 campagne distinte** nel periodo gen 2025 - set 2026.\n\nPer anno di inizio del flight:\n- 2024: 5 campagne (il flight inizia a fine 2024 e prosegue nel 2025)\n- 2025: 107 campagne\n- 2026: 65 campagne\n\nDi queste, 172 risultano concluse (fine flight entro il 30/09/2026) e 5 sono ancora in corso. Il conteggio considera solo le righe valide, quindi le righe escluse per dato di erogazione mancante o errato non sono incluse.",
+          "error": null,
+          "firstTokenMs": 10543,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692753-uRVFkU48zxcVnR3YmGsi",
+              "gen-1795692763-X1wXhKuhkI1H5crQEDL9"
+            ],
+            "analista": [
+              "gen-1795692755-CEzTdYuy8Zzp70K5FMET",
+              "gen-1795692760-CH8uS1C21o7e3DcEYjkn"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 10808,
+          "served": {
+            "gen-1795692753-uRVFkU48zxcVnR3YmGsi": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003788
+            },
+            "gen-1795692763-X1wXhKuhkI1H5crQEDL9": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004084
+            },
+            "gen-1795692760-CH8uS1C21o7e3DcEYjkn": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0006086
+            },
+            "gen-1795692755-CEzTdYuy8Zzp70K5FMET": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0007052
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-impression-totali",
+      "categoria": "dati",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 230630486",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 3228621.91",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 9011,
+      "turns": [
+        {
+          "message": "Quante impression sono state erogate in totale e quanto è la spesa complessiva?",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Calcolo il totale delle impression erogate e della spesa sull'intero dataset.",
+              "input": "Calcola il totale delle impression erogate e la spesa complessiva (somma della spesa) su tutto il dataset delle campagne Wayfare Media (gen 2025 - set 2026), senza filtri. Riporta i due totali con cifre chiare e indica eventuali righe escluse o dati mancanti nella pulizia.",
+              "ok": true,
+              "ms": 5485,
+              "charts": 0
+            }
+          ],
+          "answer": "Sul dataset completo (gen 2025 - set 2026, senza filtri):\n\n- **Impression erogate: 230.630.486**\n- **Spesa complessiva: 3.228.621,87 €**\n\nIl totale è calcolato su 8.966 righe valide, su 9.111 deduplicate. Le restanti 145 sono escluse perché il dato di erogazione è mancante o negativo. Il costo medio per mille impression erogate, ricavato dal rapporto tra i due totali, è di circa 14 €.",
+          "error": null,
+          "firstTokenMs": 8788,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692764-wonZQyzVsFHQcVHxKfyP",
+              "gen-1795692771-D5KOK5nsHDyMN0dZEalx"
+            ],
+            "analista": [
+              "gen-1795692766-fTJQ9NOD0SbaER2hunBc",
+              "gen-1795692769-A0JtpHPdecFW72RcYXnd"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 9011,
+          "served": {
+            "gen-1795692771-D5KOK5nsHDyMN0dZEalx": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004662
+            },
+            "gen-1795692766-fTJQ9NOD0SbaER2hunBc": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005255
+            },
+            "gen-1795692769-A0JtpHPdecFW72RcYXnd": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005417
+            },
+            "gen-1795692764-wonZQyzVsFHQcVHxKfyP": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003542
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-qr-lusso",
+      "categoria": "dati",
+      "route": "kb>data",
+      "optimal": false,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: data | kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /CTA|Catania/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 0.693",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 22483,
+      "turns": [
+        {
+          "message": "Per le campagne del settore Lusso, in quale aeroporto il tasso di scansione QR è più alto?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco la definizione ufficiale del tasso di scansione QR, così il calcolo usa la formula corretta.",
+              "input": "definizione tasso di scansione QR KPI calcolo",
+              "ok": true,
+              "ms": 357,
+              "sources": [
+                "6.4",
+                "12",
+                "6.6",
+                "6.7",
+                "2.6"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Calcolo il tasso di scansione QR per aeroporto sulle campagne del settore Lusso, applicando la formula definita in documentazione.",
+              "input": "Per le campagne del settore Lusso (periodo gen 2025 - set 2026), calcola il tasso di scansione QR per aeroporto, definito come scansioni QR diviso impression erogate (sommando scansioni e impression per aeroporto, non come media dei tassi). Indica quale aeroporto ha il tasso più alto, con scansioni, impression erogate e tasso per ciascuno degli otto aeroporti (FCO, MXP, LIN, BGY, VCE, NAP, BLQ, CTA). Regola di pulizia: le giornate con dato di erogazione mancante o negativo vanno escluse sia dal pianificato sia dall'erogato; i valori impossibili di scansioni QR (più scansioni che impression) sono considerati non disponibili per quella giornata ma non invalidano la giornata. Indica anche il codice delle campagne considerate.",
+              "ok": true,
+              "ms": 14491,
+              "charts": 0
+            }
+          ],
+          "answer": "Per le campagne del settore Lusso (gen 2025 - set 2026), il tasso di scansione QR più alto è quello di **CTA (Catania)**, con lo 0,693%: 2.096 scansioni su 302.419 impression erogate. Il tasso è calcolato come scansioni diviso impression erogate [§6.4]. Il dato va letto con prudenza, perché CTA pesa poco in volume rispetto a FCO (9,4 milioni di impression) e MXP (11,6 milioni).\n\nIl secondo aeroporto è FCO con lo 0,592%, seguito da MXP con lo 0,498%. Il tasso medio del settore è 0,465%.\n\nIl calcolo esclude le giornate con erogazione mancante o negativa, mentre i valori impossibili di scansioni (più scansioni che impression) rendono solo non disponibile quel dato, senza invalidare la giornata [§6.6]. Nei dati non ci sono casi del genere. Restano però 6 righe Lusso con scansioni QR mancanti, che non entrano nel calcolo e che conviene verificare.",
+          "error": null,
+          "firstTokenMs": 21461,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692773-ZsEiOuf87RpDfwtJerpG",
+              "gen-1795692776-BXT9aieuvMC43MpVBkM5",
+              "gen-1795692792-P9qONe9oTFWqUIeAhYXN"
+            ],
+            "analista": [
+              "gen-1795692778-jgUbWul6UHFBex7kOZoz",
+              "gen-1795692783-OpoSIFrpQe5GN2W3iQKk",
+              "gen-1795692785-kUozXFyK3lUlzledGQzc"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 22483,
+          "served": {
+            "gen-1795692778-jgUbWul6UHFBex7kOZoz": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0007761
+            },
+            "gen-1795692783-OpoSIFrpQe5GN2W3iQKk": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005914
+            },
+            "gen-1795692792-P9qONe9oTFWqUIeAhYXN": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0008915
+            },
+            "gen-1795692776-BXT9aieuvMC43MpVBkM5": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0006194
+            },
+            "gen-1795692785-kUozXFyK3lUlzledGQzc": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0012738
+            },
+            "gen-1795692773-ZsEiOuf87RpDfwtJerpG": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004081
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "data-grafico-mensile",
+      "categoria": "dati",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "grafico",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 10900,
+      "turns": [
+        {
+          "message": "Mostrami con un grafico l'andamento mensile delle impression erogate.",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Calcolo le impression erogate mensili sull'intero dataset e preparo il grafico dell'andamento.",
+              "input": "Calcola l'andamento mensile delle impression erogate (non quelle pianificate) su tutto il dataset delle campagne, periodo gen 2025 - set 2026. Raggruppa per mese (aggregazione per mese di calendario), somma le impression erogate per ciascun mese e mostra la tabella dei valori mensili. Genera un grafico a linee con i mesi in ascissa e le impression erogate totali in ordinata, con titolo e etichette sugli assi in italiano. Indica nella risposta il mese con il valore massimo e quello con il valore minimo.",
+              "ok": true,
+              "ms": 6656,
+              "charts": 1
+            }
+          ],
+          "answer": "Ecco l'andamento mensile delle impression erogate, da gennaio 2025 a settembre 2026, su 8.966 righe valide, per un totale di circa 230,6 milioni.\n\n- **Mese con il valore massimo:** luglio 2025, con circa 23,5 milioni.\n- **Mese con il valore minimo:** febbraio 2026, con circa 2,5 milioni.\n- **Picchi e cali:** agosto 2026 è il secondo valore più alto, con circa 20,8 milioni insieme a luglio 2025. Febbraio 2025 e febbraio 2026 sono i mesi più bassi, sotto i 2,6 milioni.\n\nIl grafico a linee e la tabella mensile sono mostrati sotto la risposta.",
+          "error": null,
+          "firstTokenMs": 10373,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692796-QqJLyzShlDHqG0WPzLTI",
+              "gen-1795692804-ODqO30jrqdZujGbiL5mu"
+            ],
+            "analista": [
+              "gen-1795692798-5mjWx11BdPQWzBRajpwF",
+              "gen-1795692802-HFDD0DeV52mkYwEi8Ozv"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 10900,
+          "served": {
+            "gen-1795692796-QqJLyzShlDHqG0WPzLTI": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004375
+            },
+            "gen-1795692804-ODqO30jrqdZujGbiL5mu": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004988
+            },
+            "gen-1795692798-5mjWx11BdPQWzBRajpwF": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005723
+            },
+            "gen-1795692802-HFDD0DeV52mkYwEi8Ozv": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0006097
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mix-make-good",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "numero 30450.54",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 38431,
+      "turns": [
+        {
+          "message": "Quali campagne hanno diritto a un make-good e quanto valgono in totale?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Recupero la regola make-good con soglie ed esclusioni prima di applicarla ai dati.",
+              "input": "make-good garanzia di erogazione condizioni soglia esclusioni calcolo valore",
+              "ok": true,
+              "ms": 410,
+              "sources": [
+                "5.2",
+                "6.6",
+                "5.3",
+                "5.4",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Recupero la scadenza di consegna delle creatività (§2.6), necessaria per applicare l'esclusione per ritardo.",
+              "input": "scadenza consegna creatività sezione 2.6 ritardo campagna",
+              "ok": true,
+              "ms": 461,
+              "sources": [
+                "5.3",
+                "2.6",
+                "7.3",
+                "12",
+                "6.7"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Applico la regola del make-good con soglia 95%, esclusioni e calcolo del valore ai dati delle campagne.",
+              "input": "Individua le campagne che hanno diritto a un make-good e calcola il valore totale, applicando la regola aziendale per esteso.\n\nREGOLA (handbook §5.2, §5.3, §6.6, §2.6, §5.4):\n1. Perimetro: solo campagne con flight concluso (ancora in corso = escluse; la verifica si fa solo a flight concluso). Considera concluso un flight con data di fine uguale o precedente all'ultima data disponibile nel dataset, se il dataset non riporta uno stato esplicito.\n2. Soglia: la campagna ha diritto al make-good se, a fine flight, il tasso di erogazione (impression erogate / impression pianificate) è STRETTAMENTE inferiore al 95%. Il calcolo va fatto a livello di campagna complessiva.\n3. Esclusioni (escludi la campagna se):\n   - ha il flag \"creatività in ritardo\" (creatività consegnate in ritardo rispetto alla scadenza di 5 giorni lavorativi prima dell'inizio flight);\n   - è stata sospesa o modificata su richiesta del cliente (se presente un campo o uno stato che lo indica).\n4. Giorni con dato di erogazione mancante o palesemente errato (es. erogazione negativa): escludi quella giornata sia dal pianificato sia dall'erogato, in tutti i calcoli.\n5. Valore del make-good in euro per campagna = (impression pianificate − impression erogate) × CPM contrattuale / 1000, calcolato sui soli giorni validi.\n6. Venezia (VCE) lavori 12 gennaio - 29 marzo 2026: nessuna esclusione speciale; le campagne coinvolte seguono le regole ordinarie.\n\nOUTPUT richiesto:\n- numero di campagne che hanno diritto al make-good e numero di campagne escluse (con motivo: in corso, creatività in ritardo, modificata/sospesa su richiesta del cliente, sopra soglia);\n- elenco delle campagne con diritto: codice campagna (es. WM-2025-XXXX), inserzionista, aeroporto, periodo, impression pianificate, erogate, tasso di erogazione in %, CPM contrattuale, valore make-good in euro;\n- valore totale dei make-good in euro;\n- indica eventuali giorni esclusi per dato anomalo e quante campagne ne sono state impattate.",
+              "ok": true,
+              "ms": 22486,
+              "charts": 0
+            }
+          ],
+          "answer": "**18 campagne hanno diritto a un make-good, per un valore totale di 30.450,52 €.**\n\nIl make-good spetta se, a flight concluso, la campagna ha erogato meno del 95% del pianificato, e vale la differenza tra pianificato ed erogato al CPM contrattuale [§5.2]. Sono escluse le campagne con creatività consegnate in ritardo, quelle sospese o modificate su richiesta del cliente e quelle ancora in corso [§5.3]. Il make-good va usato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].\n\nDettagli dell'analisi:\n- **Perimetro:** 177 campagne. Le 5 ancora in corso sono escluse. Le 172 concluse sono state valutate sulla soglia.\n- **Esclusioni:** 140 campagne sono sopra il 95%. 14 sono sotto soglia ma hanno la creatività in ritardo, quindi restano fuori. Le 18 con diritto hanno un tasso di erogazione tra l'84% e il 94%.\n- **Esclusione non verificabile:** il dataset non ha un campo di stato che indichi le campagne sospese o modificate su richiesta del cliente, quindi questa esclusione non è stata applicata.\n- **Dati anomali:** le giornate con erogazione mancante o negativa sono state escluse sia dal pianificato sia dall'erogato, come previsto [§6.6]. Hanno interessato 92 campagne.\n- **Valore più alto:** WM-2026-0096 (Caffè Montano), 5.381,81 €.\n\nPrima di emettere le note di credito, conviene verificare con l'area commerciale le 18 campagne con diritto, in particolare quelle sotto l'85%. Per le 14 campagne escluse per creatività in ritardo, va confermato che il ritardo sia imputabile al cliente, perché il flag è registrato da Campaign Operations [§2.6].",
+          "error": null,
+          "firstTokenMs": 36355,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692806-VqDASTWLfqiZS063EJ2X",
+              "gen-1795692808-dXr8LdSnT5l7WL8b1goM",
+              "gen-1795692811-5jvT17lE4HlrCFuLWpUa",
+              "gen-1795692840-cf8vV6QHhQAKCPDFXvtU"
+            ],
+            "analista": [
+              "gen-1795692818-kjLVuhuoc3cQZbnqspsJ",
+              "gen-1795692827-3fuNbdOEEQWzV5yVdS1X",
+              "gen-1795692834-kpvJs0McV3Q1HPnTag1M"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 38431,
+          "served": {
+            "gen-1795692806-VqDASTWLfqiZS063EJ2X": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003422
+            },
+            "gen-1795692808-dXr8LdSnT5l7WL8b1goM": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.000624
+            },
+            "gen-1795692818-kjLVuhuoc3cQZbnqspsJ": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0013542
+            },
+            "gen-1795692840-cf8vV6QHhQAKCPDFXvtU": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0011991
+            },
+            "gen-1795692834-kpvJs0McV3Q1HPnTag1M": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0015988
+            },
+            "gen-1795692827-3fuNbdOEEQWzV5yVdS1X": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.00134
+            },
+            "gen-1795692811-5jvT17lE4HlrCFuLWpUa": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0011884
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mix-sconti-fuori-policy",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §3.3",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0079/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /WM-2025-0022/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 24868,
+      "turns": [
+        {
+          "message": "Ci sono contratti con uno sconto fuori policy? Elencali.",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco le eccezioni e le esclusioni alla policy sugli sconti, che non compaiono nei primi passaggi.",
+              "input": "sconti esclusioni approvazione deroghe sconto oltre soglia contratti esclusi",
+              "ok": true,
+              "ms": 324,
+              "sources": [
+                "3.3",
+                "3.2",
+                "1.1",
+                "3",
+                "5.3"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Cerco nell'handbook la policy sugli sconti, con soglie e le eventuali esclusioni, per verificare i contratti.",
+              "input": "policy sconti massimi listino CPM condizioni di vendita esclusioni",
+              "ok": true,
+              "ms": 348,
+              "sources": [
+                "3.3",
+                "3",
+                "3.2",
+                "3.1",
+                "6.5"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": null,
+              "input": "Individua i contratti (campagne, con codice WM-...) il cui sconto complessivo sul listino supera il 25%, cioè con CPM contrattuale inferiore al 75% del listino del loro formato. Regola aziendale (Handbook §3.3): lo sconto complessivo non può mai superare il 25%; un CPM contrattuale (listino meno sconti) inferiore al 75% del listino è fuori policy. Listino CPM 2025-2026 (Handbook §3.1, unico per tutti gli aeroporti): Gate Screen 18,00 €; Digital Totem 14,00 €; Lounge Screen 32,00 €; Wi-Fi Portal 9,00 €; Baggage Claim Wall 12,00 €. Soglia da applicare: 75% di ciascun listino, cioè Gate Screen 13,50 €; Digital Totem 10,50 €; Lounge Screen 24,00 €; Wi-Fi Portal 6,75 €; Baggage Claim Wall 9,00 €. Usa il CPM contrattuale indicato per ciascuna campagna nel dataset (se non presente, calcolalo come spesa diviso impression erogate per 1.000, Handbook §6.5, e spiega cosa hai usato). Considera l'intero periodo gen 2025 - set 2026 e tutte le campagne. Per ogni contratto fuori policy riporta: codice campagna (WM-...), inserzionista, formato, listino, CPM contrattuale, sconto effettivo in percentuale, e se disponibile l'approvazione scritta dell'Head of Sales. Ordina per sconto effettivo decrescente e indica il numero totale di contratti fuori policy.",
+              "ok": true,
+              "ms": 12677,
+              "charts": 0
+            }
+          ],
+          "answer": "Sì, **7 contratti** su 177 campagne (gen 2025 - set 2026) risultano fuori policy, con uno sconto effettivo tra il 29% e il 32%. La policy fissa un tetto del 25% sul listino: un CPM contrattuale sotto il 75% del listino è fuori policy [§3.3].\n\nI contratti fuori policy sono:\n- **WM-2025-0079** (Linea Sartori), Gate Screen, 32%\n- **WM-2025-0119** (Maison Verbena), Baggage Claim Wall, 32%\n- **WM-2026-0166** (Caffè Montano), Gate Screen, 32%\n- **WM-2026-0156** (Orizzonte Viaggi), Gate Screen, 32%\n- **WM-2025-0176** (Dolce Alpi), Baggage Claim Wall, 30%\n- **WM-2025-0127** (Dolce Alpi), Digital Totem, 30%\n- **WM-2025-0022** (Soundwave Audio), Wi-Fi Portal, 29%\n\nIl dataset non contiene il campo dell'approvazione scritta dell'Head of Sales, quindi non posso verificarla. Per la policy, però, un contratto sotto soglia è fuori policy anche se approvato, e va segnalato al Controllo di Gestione per la revisione trimestrale dei margini [§3.3]. Lo sconto aggiuntivo oltre il volume è consentito solo con approvazione scritta, fino a 5 punti [§3.3].",
+          "error": null,
+          "firstTokenMs": 23496,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692845-YBaM0iwkJEJcTxU99Hzf",
+              "gen-1795692847-EByRnC75blOmQ9joYb99",
+              "gen-1795692865-5BpPmgcfiN9e9KHobQNh"
+            ],
+            "analista": [
+              "gen-1795692852-EAzwIDiP5ZbzQ4JQt6uq",
+              "gen-1795692857-oyJ1Ag5Li7NGWyAKmtom",
+              "gen-1795692860-vrrvm65wqwMH2Io0gGIy"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 24868,
+          "served": {
+            "gen-1795692847-EByRnC75blOmQ9joYb99": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.000957
+            },
+            "gen-1795692860-vrrvm65wqwMH2Io0gGIy": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0010829
+            },
+            "gen-1795692852-EAzwIDiP5ZbzQ4JQt6uq": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0007616
+            },
+            "gen-1795692857-oyJ1Ag5Li7NGWyAKmtom": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0007327
+            },
+            "gen-1795692845-YBaM0iwkJEJcTxU99Hzf": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004269
+            },
+            "gen-1795692865-5BpPmgcfiN9e9KHobQNh": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.001185
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mix-venezia",
+      "categoria": "regola applicata ai dati",
+      "route": "kb>data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "kb>data (atteso: kb>data | data>kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "cita §5.4",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 38458,
+      "turns": [
+        {
+          "message": "Durante i lavori a Venezia l'erogazione è calata? Ai clienti coinvolti spetta qualcosa?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco la regola su garanzia di erogazione e make-good, con eventuali esclusioni, per verificare se a Venezia spetta un risarcimento.",
+              "input": "garanzia di erogazione make-good calo impression lavori aeroporto esclusioni",
+              "ok": true,
+              "ms": 355,
+              "sources": [
+                "5.2",
+                "12",
+                "5.1",
+                "1",
+                "5.4"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "kb",
+              "motivo": "Cerco la sezione 6.6 sui giorni con dato di erogazione valido, che determina le esclusioni dal calcolo del make-good.",
+              "input": "giorni con dato di erogazione valido esclusioni calcolo make-good sezione 6.6",
+              "ok": true,
+              "ms": 316,
+              "sources": [
+                "6.6",
+                "5.2",
+                "5.3",
+                "6.7",
+                "11"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": null,
+              "input": "Analisi dell'erogazione a Venezia (aeroporto VCE) durante i lavori del 12 gennaio - 29 marzo 2026. Obiettivo: identificare le campagne coinvolte, il calo di erogazione e il make-good spettante.\nPassi:\n1) Per le campagne con almeno un giorno di flight nel periodo 12/01/2026-29/03/2026 presso VCE, confronta impression pianificate ed erogate di VCE nel periodo, e il tasso di erogazione (erogate/pianificate) rispetto al pianificato. Riporta anche il calo rispetto a un periodo di riferimento normale di VCE, se disponibile.\n2) Regola make-good (handbook §5.1, §5.2, §5.3, §6.6): la garanzia è al 95% delle impression pianificate, verificata a livello di campagna complessiva (sommando tutti gli aeroporti e tutti i giorni del flight), solo a campagna conclusa (data di fine flight passata). Valore make-good in euro = (impression pianificate − impression erogate) × CPM contrattuale / 1000, calcolato sulla campagna intera.\nEsclusioni da applicare: escludi le campagne ancora in corso (fine flight non passata alla data di oggi); escludi le campagne con creatività consegnate in ritardo; escludi le campagne sospese o modificate su richiesta del cliente (se il dataset ha questo campo); escludi i giorni con dato di erogazione mancante o palesemente errato (valori negativi o nulli anomali), che vanno tolti sia dal pianificato sia dall'erogato.\n3) Per ogni campagna coinvolta elenca: codice contratto (WM-...), inserzionista, periodo, impression pianificate, erogate, tasso di erogazione complessivo di campagna, esito della verifica del 95% (sotto/sopra) e valore make-good stimato in euro se sotto soglia.\nRiporta anche il totale dei make-good stimati e il numero di campagne coinvolte e di quelle con diritto. Segnala esplicitamente eventuali campagne escluse e il motivo.",
+              "ok": true,
+              "ms": 23176,
+              "charts": 0
+            }
+          ],
+          "answer": "Sì, a Venezia l'erogazione è calata in modo netto: tra il 12 gennaio e il 29 marzo 2026 sono state erogate il 75,5% delle impression pianificate, contro il 97,8% del periodo di riferimento. Ai clienti coinvolti spetta un make-good per un totale stimato di **1.885,85 €**, ma solo per tre delle quattro campagne.\n\n**Campagne coinvolte**\n- **WM-2026-0156** (Orizzonte Viaggi): tasso di campagna 91,2%, make-good 861,54 €\n- **WM-2026-0021** (Vigna Antica): tasso di campagna 94,2%, make-good 637,01 €\n- **WM-2026-0128** (Essenza Profumi): tasso di campagna 84,9%, make-good 387,31 €\n- **WM-2025-0060** (Vigna Antica): esclusa, perché la creatività è stata consegnata in ritardo, quindi non dà diritto a make-good [§5.3]. Il suo tasso di campagna è 75,1%.\n\n**Regole applicate**\n- La garanzia è il 95% delle impression pianificate, verificato a livello di campagna, sommando tutti gli aeroporti e tutti i giorni, e solo a campagna conclusa [§5.1].\n- Il make-good copre la differenza tra pianificato ed erogato, valorizzata al CPM contrattuale. Va usato entro 6 mesi dalla fine della campagna e non è convertibile in denaro [§5.2].\n- Per i lavori a VCE, le campagne seguono le regole ordinarie: il make-good spetta se la campagna nel suo complesso è sotto il 95% a fine flight [§5.4].\n\n**Limiti della verifica**\n- Il calcolo è sull'intera campagna, quindi il calo di VCE incide sul risultato solo in parte.\n- Non è stato possibile verificare l'esclusione delle campagne sospese o modificate su richiesta del cliente, perché il dataset non ha un campo di stato dedicato [§5.3].\n- WM-2026-0021 è vicina alla soglia (94,2%): il suo make-good dipende da pochi punti percentuali.\n\nPer avviare le richieste dei clienti, il percorso è quello del reclamo: l'account manager apre la pratica nel CRM, Campaign Operations verifica i log di erogazione e risponde entro 3 giorni lavorativi, e il make-good segue la sezione 5 [§11].",
+          "error": null,
+          "firstTokenMs": 35430,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692870-jNJTVZ0Gb9V6EkgYDhrY",
+              "gen-1795692872-TFmEhPdhsch0ocLUUjJQ",
+              "gen-1795692874-PiXcF8lHKCxFnljLBr40",
+              "gen-1795692902-U1R86H0clRQ9lu6gjR3W"
+            ],
+            "analista": [
+              "gen-1795692879-KpEo5w0FoDQUZxK1axLD",
+              "gen-1795692887-HnkfWfOsWPLStKxwS2il",
+              "gen-1795692891-rbl5mTKpyAHQGkCOzFE8",
+              "gen-1795692895-UsIL2fPVR351LE3iNzRq"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 38458,
+          "served": {
+            "gen-1795692887-HnkfWfOsWPLStKxwS2il": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0009839
+            },
+            "gen-1795692879-KpEo5w0FoDQUZxK1axLD": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0011202
+            },
+            "gen-1795692895-UsIL2fPVR351LE3iNzRq": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0013421
+            },
+            "gen-1795692874-PiXcF8lHKCxFnljLBr40": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0009957
+            },
+            "gen-1795692870-jNJTVZ0Gb9V6EkgYDhrY": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003916
+            },
+            "gen-1795692891-rbl5mTKpyAHQGkCOzFE8": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0011232
+            },
+            "gen-1795692872-TFmEhPdhsch0ocLUUjJQ": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0005688
+            },
+            "gen-1795692902-U1R86H0clRQ9lu6gjR3W": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0013398
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "conv-saluto",
+      "categoria": "conversazione e fuori ambito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2272,
+      "turns": [
+        {
+          "message": "Ciao! Cosa sai fare?",
+          "steps": [],
+          "answer": "Ciao! Sono l'assistente AI del reparto Media Sales & Campaign Performance di Wayfare Media. Posso aiutarti in due ambiti:\n\n- **Regole e procedure**: condizioni di vendita, listino CPM e sconti, cancellazioni, garanzia di erogazione e make-good, specifiche dei formati, policy sui contenuti, metodologia di misurazione e definizioni dei KPI. Ti rispondo citando le sezioni della documentazione aziendale.\n- **Analisi dei dati campagne** (gennaio 2025 - settembre 2026): impression, reach, dwell time, scansioni QR, conversioni, CPM, spesa, per campagna, inserzionista, settore, aeroporto, formato o segmento di audience. Posso anche produrre classifiche, trend e grafici.\n\nCopro gli otto aeroporti della rete: FCO, MXP, LIN, BGY, VCE, NAP, BLQ e CTA. Dimmi pure cosa ti serve.",
+          "error": null,
+          "firstTokenMs": 1300,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692908-SmRNRGnXlaK16bC5iKxC"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 2272,
+          "served": {
+            "gen-1795692908-SmRNRGnXlaK16bC5iKxC": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004223
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "conv-meteo",
+      "categoria": "conversazione e fuori ambito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 1539,
+      "turns": [
+        {
+          "message": "Che tempo farà domani a Milano?",
+          "steps": [],
+          "answer": "Mi dispiace, le previsioni meteo non rientrano nel mio ambito. Sono l'assistente del reparto Media Sales & Campaign Performance di Wayfare Media e posso aiutarti con regole e condizioni commerciali, specifiche dei formati, metodologia di misurazione e con l'analisi delle performance delle campagne negli otto aeroporti (impression, reach, scansioni QR, conversioni, CPM, spesa e andamenti per periodo, aeroporto, formato o settore).\n\nSe ti serve qualcosa su questi temi, dimmi pure.",
+          "error": null,
+          "firstTokenMs": 1036,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692911-AzlngZjywLc6GhXOBmJd"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 1539,
+          "served": {
+            "gen-1795692911-AzlngZjywLc6GhXOBmJd": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0003478
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "conv-codice",
+      "categoria": "conversazione e fuori ambito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 2349,
+      "turns": [
+        {
+          "message": "Scrivimi una funzione Python che ordina una lista di numeri.",
+          "steps": [],
+          "answer": "Mi occupo di analisi e documentazione delle campagne pubblicitarie di Wayfare Media, quindi una funzione Python per ordinare una lista esula dal mio ambito. Posso aiutarti con:\n\n- **Regole e policy**: listino CPM, condizioni di vendita, cancellazioni, garanzia di erogazione e make-good, specifiche dei formati, definizioni dei KPI.\n- **Dati delle campagne** (gen 2025 - set 2026): impression, reach, dwell time, scansioni QR, conversioni, CPM e spesa, per campagna, inserzionista, settore, aeroporto, formato o segmento, con grafici e classifiche.\n\nSe hai una domanda su uno di questi temi, dimmi pure.",
+          "error": null,
+          "firstTokenMs": 1631,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692912-42nRRCxsM2UfOczgueN0"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 2349,
+          "served": {
+            "gen-1795692912-42nRRCxsM2UfOczgueN0": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004278
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "seguito-aeroporto",
+      "categoria": "domande di seguito",
+      "route": "data",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "data (atteso: data)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "compito con /MXP|Malpensa/",
+          "ok": true,
+          "detail": "Calcola il tasso di erogazione mensile per l'aeroporto di Malpensa (MXP) nel 2026 (gennaio-dicembre 2026, o i mesi disponibili nel dataset). Tasso di erogazione"
+        }
+      ],
+      "ok": true,
+      "ms": 14128,
+      "turns": [
+        {
+          "message": "Qual è il tasso di erogazione mensile di Venezia nel 2026?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco la definizione ufficiale del tasso di erogazione per calcolarlo correttamente.",
+              "input": "definizione tasso di erogazione impression erogate pianificate KPI",
+              "ok": true,
+              "ms": 323,
+              "sources": [
+                "6.1",
+                "5.2",
+                "6.7",
+                "5.1",
+                "6.6"
+              ],
+              "charts": 0
+            },
+            {
+              "tool": "data",
+              "motivo": "Calcolo il tasso di erogazione mensile di Venezia per il 2026 dal dataset.",
+              "input": "Calcola il tasso di erogazione mensile per l'aeroporto di Venezia (VCE) nel 2026 (gennaio-dicembre 2026, o i mesi disponibili nel dataset). Tasso di erogazione = impression erogate / impression pianificate × 100, per ciascun mese. Regola [§6.6]: escludi i giorni con dato di erogazione mancante o palesemente errato (es. valori negativi) sia dal pianificato sia dall'erogato. Mostra il risultato per mese con i valori di impression pianificate ed erogate e il tasso in percentuale, più il dato complessivo del periodo. Se utile, aggiungi un grafico a linee dell'andamento mensile.",
+              "ok": true,
+              "ms": 9571,
+              "charts": 1
+            }
+          ],
+          "answer": "Il tasso di erogazione di Venezia nel 2026 è del **92,45%**: 8.591.716 impression erogate su 9.293.145 pianificate. Il dato copre gennaio–settembre, perché il dataset arriva fino al 27 settembre 2026 e non contiene ottobre–dicembre.\n\nPer mese, il tasso va da un minimo del 75,2% a marzo a un massimo del 100,1% a settembre. Gennaio è all'83,1% e febbraio all'80,2%. Luglio e agosto superano il 97%. A settembre le erogate risultano superiori alle pianificate.\n\nHo escluso i giorni con dato di erogazione mancante o negativo, sia dal pianificato sia dall'erogato [§6.6]. La garanzia del 95% si verifica a livello di campagna, sommando tutti gli aeroporti e tutti i giorni, e solo a campagna conclusa [§5.1]. Il tasso mensile di Venezia è quindi un indicatore di andamento e non una verifica della garanzia.",
+          "error": null,
+          "firstTokenMs": 16921,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692914-oglVuiW3WoSPKjVElMVT",
+              "gen-1795692917-zRPpVoK8R30ng7Fdn3Hb",
+              "gen-1795692929-CBF94Vw0vMNHwRTHoqfB"
+            ],
+            "analista": [
+              "gen-1795692919-Sx6UInCkej4HR3t0V9lL",
+              "gen-1795692923-SgyJgunmCJSdzZORCQGG",
+              "gen-1795692926-B9zBimwLOBbHAiWsFdQA"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 17920
+        },
+        {
+          "message": "E per Malpensa?",
+          "steps": [
+            {
+              "tool": "data",
+              "motivo": "Ripeto il calcolo del tasso di erogazione mensile 2026 per Malpensa (MXP).",
+              "input": "Calcola il tasso di erogazione mensile per l'aeroporto di Malpensa (MXP) nel 2026 (gennaio-dicembre 2026, o i mesi disponibili nel dataset). Tasso di erogazione = impression erogate / impression pianificate × 100, per ciascun mese. Regola [§6.6]: escludi i giorni con dato di erogazione mancante o palesemente errato (es. valori negativi) sia dal pianificato sia dall'erogato. Mostra il risultato per mese con i valori di impression pianificate ed erogate e il tasso in percentuale, più il dato complessivo del periodo. Se utile, aggiungi un grafico a linee dell'andamento mensile.",
+              "ok": true,
+              "ms": 8087,
+              "charts": 1
+            }
+          ],
+          "answer": "Per Malpensa (MXP) nel 2026 il tasso di erogazione complessivo è del **100,09%**: 26,17 milioni di impression erogate su 26,15 milioni pianificate. Il dato copre gennaio–settembre, perché il dataset non contiene ottobre–dicembre.\n\nIl tasso mensile va da un minimo del 97,25% ad aprile a un massimo del 102,87% a luglio. Nei mesi di gennaio, marzo, maggio e luglio le erogate superano le pianificate. Settembre è un mese parziale.\n\nHo escluso i giorni con dato di erogazione mancante o negativo, sia dal pianificato sia dall'erogato [§6.6]. Come per Venezia, il tasso mensile è un indicatore di andamento: la garanzia del 95% si verifica a livello di campagna, sommando tutti gli aeroporti, e solo a campagna conclusa [§5.1].",
+          "error": null,
+          "firstTokenMs": 13329,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692932-oxSfvqljQZp2nFAlg9lX",
+              "gen-1795692942-cRAw3CQttr0auo6Dcyys"
+            ],
+            "analista": [
+              "gen-1795692934-YdQR9thwmVGXxa2oF2c4",
+              "gen-1795692939-A0irBgCestFJafPq0dqB"
+            ]
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 14128,
+          "served": {
+            "gen-1795692934-YdQR9thwmVGXxa2oF2c4": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0006447
+            },
+            "gen-1795692939-A0irBgCestFJafPq0dqB": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0007304
+            },
+            "gen-1795692942-cRAw3CQttr0auo6Dcyys": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0009446
+            },
+            "gen-1795692932-oxSfvqljQZp2nFAlg9lX": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0007062
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "seguito-penale",
+      "categoria": "domande di seguito",
+      "route": "none",
+      "optimal": true,
+      "checks": [
+        {
+          "name": "percorso",
+          "ok": true,
+          "detail": "none (atteso: none | kb)"
+        },
+        {
+          "name": "risposta",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "contiene /100\\s?%/",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "modello effettivo",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "ok": true,
+      "ms": 1170,
+      "turns": [
+        {
+          "message": "Che penale c'è se il cliente cancella 20 giorni prima del flight?",
+          "steps": [
+            {
+              "tool": "kb",
+              "motivo": "Cerco nella documentazione le penali di cancellazione per una cancellazione 20 giorni prima del flight.",
+              "input": "penali di cancellazione campagna giorni prima del flight",
+              "ok": true,
+              "ms": 389,
+              "sources": [
+                "4.3",
+                "4.4",
+                "5.1",
+                "12",
+                "2.6"
+              ],
+              "charts": 0
+            }
+          ],
+          "answer": "A 20 giorni dall'inizio del flight ricade nella fascia da 15 a 30 giorni: la penale è del **25%** del valore pianificato della campagna (impression pianificate per CPM contrattuale) [§4.3].\n\nSe il cliente cancella entro 14 giorni la penale sale al 50%, e sotto i 7 giorni o a flight iniziato arriva al 100% del valore residuo [§4.3]. Oltre 30 giorni prima non è prevista alcuna penale [§4.3].",
+          "error": null,
+          "firstTokenMs": 2716,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692946-r4kAcmM3P0gNY7iHpiHJ",
+              "gen-1795692948-CVNwV23fiIepFKzFZJtq"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 3060
+        },
+        {
+          "message": "E se mancano solo 5 giorni?",
+          "steps": [],
+          "answer": "Con 5 giorni di preavviso siamo sotto i 7 giorni, quindi la penale è del **100% del valore residuo** [§4.3].",
+          "error": null,
+          "firstTokenMs": 1170,
+          "generations": {
+            "orchestratore": [
+              "gen-1795692950-MAd0aCO871h3OEzE6LCo"
+            ],
+            "analista": []
+          },
+          "requestedModel": "anthropic/claude-haiku-5.5",
+          "ms": 1170,
+          "served": {
+            "gen-1795692950-MAd0aCO871h3OEzE6LCo": {
+              "model": "anthropic/claude-haiku-5.5-20261007",
+              "provider": "Claude Platform on AWS",
+              "costUsd": 0.0004681
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
