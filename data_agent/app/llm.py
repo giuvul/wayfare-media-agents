@@ -1,4 +1,8 @@
-"""Client LLM: un solo punto in cui si sceglie provider e modello (vendor-agnostic via OpenRouter)."""
+"""Client LLM: un solo punto in cui si sceglie provider e modello (vendor-agnostic via OpenRouter).
+
+Le chiamate passano dal proxy del back end (`/internal/llm`): il data agent, che esegue codice generato dal modello,
+non possiede la chiave OpenRouter. Al proxy si autentica con il token interno, e il back end aggiunge la chiave.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +24,27 @@ _catalog: dict = {"at": 0.0, "temperature": set(), "failed_at": 0.0}
 _catalog_lock = threading.Lock()
 
 
+def _auth(settings: Settings) -> dict[str, str]:
+    return {"Authorization": f"Bearer {settings.data_agent_token.get_secret_value()}"}
+
+
+def wait_for_proxy(settings: Settings, interval_s: float = 3.0) -> None:
+    """Attende che il back end risponda. Serve all'avvio: in Docker il data agent parte prima del back end, e la
+    prima pulizia dei dati chiama il modello."""
+    url = f"{settings.llm_proxy_url}/health"
+    deadline = time.monotonic() + settings.llm_proxy_wait_s
+    while True:
+        try:
+            with urllib.request.urlopen(url, timeout=3) as res:
+                if res.status == 200:
+                    return
+        except OSError:
+            pass
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"il back end non risponde su {url}: le chiamate al modello passano dal suo proxy")
+        time.sleep(interval_s)
+
+
 def supports_temperature(settings: Settings, model: str) -> bool:
     """True se il catalogo OpenRouter dichiara `temperature` per il modello.
 
@@ -32,7 +57,8 @@ def supports_temperature(settings: Settings, model: str) -> bool:
         stale = not _catalog["at"] or now - _catalog["at"] > _CATALOG_TTL_S
         if stale and now - _catalog["failed_at"] > _CATALOG_RETRY_S:
             try:
-                with urllib.request.urlopen(f"{settings.openrouter_base_url}/models", timeout=15) as res:
+                request = urllib.request.Request(f"{settings.llm_proxy_url}/models", headers=_auth(settings))
+                with urllib.request.urlopen(request, timeout=15) as res:
                     data = json.load(res)["data"]
                 _catalog["temperature"] = {m["id"] for m in data if "temperature" in (m.get("supported_parameters") or [])}
                 _catalog["at"] = time.monotonic()
@@ -43,9 +69,8 @@ def supports_temperature(settings: Settings, model: str) -> bool:
         return model in _catalog["temperature"]
 
 
-def build_llm(settings: Settings, model: str | None = None, api_key: str | None = None,
-              timeout_s: float | None = None) -> ChatOpenAI:
-    """Modello e chiave di default dal .env; il back end può sostituirli per richiesta (impostazioni dell'utente)."""
+def build_llm(settings: Settings, model: str | None = None, timeout_s: float | None = None) -> ChatOpenAI:
+    """Modello di default dal .env; il back end può sostituirlo per richiesta (impostazioni dell'utente)."""
     model = model or settings.llm_model
     extra_body: dict = {
         # instrada solo verso provider che supportano tutti i parametri richiesti (es. tool calling)
@@ -57,12 +82,11 @@ def build_llm(settings: Settings, model: str | None = None, api_key: str | None 
         extra_body["models"] = [model, *fallbacks]
     return ChatOpenAI(
         model=model,
-        api_key=api_key or settings.openrouter_api_key,
-        base_url=settings.openrouter_base_url,
+        api_key=settings.data_agent_token,  # per il proxy del back end, che lo sostituisce con la chiave OpenRouter
+        base_url=settings.llm_proxy_url,
         # temperatura 0 (codice e numeri ripetibili) solo dove il modello la accetta
         **({"temperature": 0} if supports_temperature(settings, model) else {}),
         timeout=min(settings.llm_timeout_s, timeout_s or settings.llm_timeout_s),
         max_retries=1,
         extra_body=extra_body,
-        default_headers={"X-Title": "Wayfare Media Agents"},
     )

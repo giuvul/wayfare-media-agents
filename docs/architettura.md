@@ -1,7 +1,8 @@
 # Architettura e decisioni
 
-Questo documento descrive come è fatto il sistema e perché. Per installazione, test e sicurezza in breve vedi il
-[README](../README.md); per la storia delle modifiche il [CHANGELOG](../CHANGELOG.md).
+Questo documento descrive come è fatto il sistema e perché. Per installazione e test vedi il
+[README](../README.md); per lo scenario e la coerenza tra handbook e dataset [scenario.md](scenario.md); per il
+modello delle minacce [sicurezza.md](sicurezza.md); per la storia delle modifiche il [CHANGELOG](../CHANGELOG.md).
 
 ## 1. Componenti
 
@@ -13,8 +14,55 @@ separati o su host diversi senza modifiche al codice.
 |---|---|---|
 | Front end (`frontend/`) | Presentazione: chat in streaming, Knowledge Base, Impostazioni | Nessuna logica di dominio, nessun segreto |
 | Back end (`backend/`) | Orchestrazione (sceglie lo strumento), RAG, persistenza, impostazioni, unico punto d'accesso per il browser | Non esegue codice generato dall'LLM |
-| Data agent (`data_agent/`) | Tutto ciò che tocca il dataset: qualità, pulizia, analisi, grafici | Non è raggiungibile dal browser |
+| Data agent (`data_agent/`) | Tutto ciò che tocca il dataset: qualità, pulizia, analisi, grafici | Non è raggiungibile dal browser, non possiede la chiave OpenRouter, in Docker non ha accesso a internet |
 | ChromaDB | Vettori e metadati dei passaggi della documentazione | Non calcola gli embedding (li calcola il back end) |
+
+### Contratti tra i servizi
+
+Ogni servizio parla con gli altri solo via HTTP, con JSON in ingresso e in uscita (tranne lo streaming della chat
+e le immagini dei grafici). Gli indirizzi arrivano da variabili d'ambiente (`DATA_AGENT_URL`, `CHROMA_URL`,
+`OPENROUTER_BASE_URL`, `LLM_PROXY_URL`).
+
+**Front end → back end** (`/api`, unico ingresso per il browser; in Docker nginx inoltra `/api` al back end)
+
+| Endpoint | Uso |
+|---|---|
+| `POST /api/chat` | Domanda; risposta in streaming SSE con eventi `status`, `tool_start`, `tool_end`, `token`, `final`, `error`. Una sola risposta alla volta per conversazione (409 altrimenti) |
+| `GET /api/conversations`, `GET` e `DELETE /api/conversations/:id` | Cronologia |
+| `GET /api/generations?ids=...` | Modello e costo effettivi di una risposta, letti da OpenRouter |
+| `GET` e `PUT /api/settings`, `GET /api/models` | Chiave (solo mascherata in lettura), modello linguistico e catalogo |
+| `/api/kb/...` | Documenti (lettura, modifica, creazione, eliminazione con reindicizzazione), dataset grezzo e pulito, dizionario, pulizia |
+| `/api/embeddings/...` | Catalogo dei modelli di embedding, risorse della macchina, cambio modello |
+| `GET /api/charts/:id` | Grafico PNG, inoltrato dal data agent |
+| `GET /api/health` | Stato di knowledge base e data agent: 200 se tutto è pronto, 503 con `status: "degraded"` altrimenti |
+
+**Back end → data agent** (rete interna, header `X-Internal-Token` su tutto tranne `/health`)
+
+| Endpoint | Timeout lato back end | Uso |
+|---|---|---|
+| `POST /analyze` | tempo rimasto al turno + margine, al massimo 75 s | Corpo: `task` (3-4000 caratteri), `timeout_s` e `model` (quello delle Impostazioni). La chiave non viaggia mai verso il data agent. Risposta: `answer`, `code`, `charts`, `table`, `cleaning`, `completa`, `generazioni`, `error` |
+| `GET /charts/{id}`, `DELETE /charts/{id}` | 10 s | Grafici di una risposta; eliminati con la conversazione |
+| `GET /dataset`, `GET /cleaning`, `POST /cleaning/rebuild`, `GET` e `PUT /dictionary` | 15-30 s | Knowledge Base dei dati |
+| `GET /health` | 3 s | `status`: `starting`, `cleaning`, `ready` o `error` |
+
+Il data agent risponde 401 senza token valido, 503 se il dataset non è ancora pronto, 504 se l'analisi supera il
+tempo, 409 se una pulizia è già in corso. Il back end traduce questi codici in messaggi per l'utente.
+
+**Data agent → back end** (proxy LLM su `/internal/llm`, fuori da `/api`: nginx non lo pubblica)
+
+| Endpoint | Uso |
+|---|---|
+| `POST /internal/llm/chat/completions` | Chiamate al modello dell'analista e della pulizia. Il data agent si autentica con il token interno come `Authorization: Bearer`; il back end lo sostituisce con la chiave in uso (Impostazioni o `.env`) e inoltra a OpenRouter. Stato e corpo della risposta tornano invariati, compresi gli errori 401, 402 e 429 |
+| `GET /internal/llm/models` | Catalogo pubblico dei modelli (per sapere quali accettano la temperatura), in cache per un'ora |
+| `GET /internal/llm/health` | Senza token: il data agent lo usa all'avvio per aspettare il back end prima della prima pulizia |
+
+Il proxy accetta solo questi tre endpoint (gli altri di OpenRouter, come la gestione delle chiavi, non sono
+raggiungibili), ha un rate limit di 120 richieste al minuto e interrompe la chiamata a valle se il data agent
+smette di aspettare.
+
+**Verso l'esterno**: solo il back end chiama servizi esterni: OpenRouter (chat, embedding, verifica della chiave,
+cataloghi, `/generation`, e le chiamate del data agent attraverso il proxy) e, al primo uso di un modello di
+embedding locale, Hugging Face. Il data agent non esce dalla rete interna.
 
 ## 2. Il percorso di una domanda
 
@@ -34,6 +82,10 @@ sequenceDiagram
   B-->>U: tool_end (fonti)
   L-->>B: chiamata analizza_dati {motivo, task con la regola per esteso}
   B->>D: POST /analyze (token interno, timeout)
+  D->>B: chiamate al modello via /internal/llm (token interno)
+  B->>L: stessa richiesta, con la chiave del back end
+  L-->>B: risposta
+  B-->>D: risposta (codice, poi sintesi)
   D-->>B: sintesi, grafici, tabella, codice, report di pulizia
   B-->>U: tool_end (analisi)
   L-->>B: risposta finale con citazioni [§x.y]
@@ -141,9 +193,12 @@ Difesa a più livelli:
 - **policy statica sull'AST**: import da una lista chiusa (anche `from ... import`), niente funzioni di lettura o
   scrittura di file, rete, memoria mappata o estensioni C, nessun nome o metodo speciale (`__...__`), nessuna
   stringa che punti a URL o percorsi di sistema;
-- **processo figlio** avviato con `spawn`: non eredita la memoria del server. Chiave OpenRouter e token interno
-  vengono tolti dall'ambiente del server all'avvio (`scrub_secret_env`), quindi il figlio non li trova nemmeno in
-  `/proc/self/environ`;
+- **nessuna chiave nel servizio**: il data agent non possiede la chiave OpenRouter, chiama il modello attraverso
+  il proxy del back end (sezione 1). In Docker sta su una rete senza uscita verso internet, quindi anche un codice
+  che aggirasse la policy non potrebbe mandare dati all'esterno;
+- **processo figlio** avviato con `spawn`: non eredita la memoria del server. Il token interno (e la chiave, se
+  per errore fosse nell'ambiente) viene tolto dall'ambiente del server all'avvio (`scrub_secret_env`), quindi il
+  figlio non lo trova nemmeno in `/proc/self/environ`;
 - **limiti del sistema operativo** applicati al figlio dopo il caricamento dei dati: CPU, memoria (3 GB) e
   dimensione dei file scritti (20 MB); output testuale e numero di grafici (4) limitati;
 - **canale di ritorno in JSON**: il server non deserializza oggetti arbitrari dal figlio. Gli unici pickle
@@ -200,6 +255,20 @@ classi che la estendono, o i dettagli in italiano del data agent), mai i testi i
 dell'agente non lanciano eccezioni: restituiscono un risultato `ERRORE: ...` che il modello spiega all'utente,
 con `ok: false` nell'artefatto per l'interfaccia.
 
+### Cosa succede quando qualcosa si guasta
+
+| Guasto | Cosa vede l'utente | Come lo gestisce il sistema |
+|---|---|---|
+| Data agent spento o non raggiungibile | Le domande sulle regole funzionano; per i dati l'assistente spiega che l'analisi non è disponibile | Lo strumento `analizza_dati` restituisce `ERRORE: ...` invece di lanciare un'eccezione; `/api/health` risponde 503 |
+| Data agent ancora in preparazione del dataset | Come sopra, con lo stato della pulizia nella Knowledge Base | `/analyze` risponde 503 finché lo stato non è `ready` |
+| Chroma spento | Le domande sui dati funzionano; per le regole l'assistente dice che non può consultare la documentazione | Lo strumento `cerca_documentazione` restituisce un errore gestito; in Docker il back end parte solo dopo Chroma e l'indicizzazione |
+| Modello principale saturo o non disponibile | Risponde il modello di riserva, con un avviso sotto la risposta | Fallback di OpenRouter (`LLM_FALLBACK_MODELS`) e retry sugli errori transitori |
+| Chiave non valida o credito esaurito | Messaggio che indica di controllare la chiave o ricaricare il credito | `userFacingError` riconosce 401, 402 e 429; per il data agent il proxy inoltra gli stessi codici |
+| Back end non ancora avviato quando il data agent prepara i dati | Nessun effetto: il dataset è pronto poco dopo il back end | Prima di generare la pulizia con il modello il data agent aspetta il proxy (`/internal/llm/health`, fino a 10 minuti); se il dataset è in cache non serve il modello |
+| Analisi troppo lunga | Risposta con i risultati parziali, dichiarati come tali | Scadenza del turno propagata (vedi sopra); `completa: false` |
+| Stop o chiusura della pagina a metà risposta | La conversazione resta utilizzabile | Il turno viene interrotto e la chiamata allo strumento rimasta aperta viene chiusa al turno dopo |
+| Riavvio del back end durante una risposta | La risposta in corso resta salvata come interrotta | Spegnimento ordinato: i turni in corso vengono interrotti e salvati, poi il database viene chiuso |
+
 ## 7. Deployment
 
 `compose.yaml` avvia cinque servizi: `chroma`, `data-agent`, `ingest` (indicizza la documentazione e termina),
@@ -208,6 +277,9 @@ streaming). L'ordine è garantito dalle dipendenze: Chroma pronto → indicizzaz
 front end.
 
 - Solo il front end è pubblicato, su `127.0.0.1`; gli altri servizi sono raggiungibili solo sulla rete interna.
+- Il data agent sta solo sulla rete `isolata` (`internal: true`, nessuna uscita verso internet), condivisa con il
+  back end; il back end è anche sulla rete normale per raggiungere OpenRouter. Il compose sovrascrive
+  `OPENROUTER_API_KEY` con un valore vuoto per il data agent, così la chiave del `.env` non arriva nel container.
 - Utenti non privilegiati, filesystem in sola lettura, nessuna capability, `no-new-privileges`. Si scrive solo
   nei volumi: `storage` (SQLite e modelli locali), `kb`, `dataset`, `analysis-cache`, `charts`, `chroma`.
   Eccezione: l'immagine ufficiale di Chroma gira come root con filesystem scrivibile; ha comunque nessuna
@@ -243,6 +315,7 @@ front end.
 | JavaScript, non TypeScript | Scelta del progetto; i confini sono tipizzati a runtime con zod (back end) e pydantic (data agent) |
 | Scadenza del turno propagata agli strumenti | I timeout fissi per livello non impediscono a più chiamate in sequenza di superare il tempo del turno; con la scadenza ogni livello sa quanto tempo gli resta |
 | Temperatura 0 solo dove il modello la accetta | Rende ripetibili numeri e codice dell'analista; i modelli più recenti di Anthropic e OpenAI non la accettano e, con `require_parameters`, OpenRouter rifiuterebbe la richiesta. Il supporto si legge dal catalogo OpenRouter |
+| Il data agent chiama il modello attraverso un proxy del back end | Il servizio che esegue codice generato non possiede credenziali e non esce su internet; la chiave sta in un solo processo, che è anche l'unico a parlare con l'esterno. Costo: una chiamata HTTP interna in più, trascurabile rispetto ai tempi del modello |
 | Modello effettivo letto da OpenRouter dopo la risposta | Il modello che ha risposto si conosce con certezza solo dall'endpoint `/generation`; interrogarlo dopo la risposta non rallenta la chat, e la chiave resta sul server |
 | Valutazione end-to-end separata dai test | I test unitari usano un modello finto e sono gratuiti e deterministici; la qualità dell'orchestrazione si misura solo con il modello vero, su casi con risultato atteso |
 
@@ -251,9 +324,11 @@ front end.
 - Nessuna autenticazione degli utenti: uso locale o su rete interna.
 - Il processo della sandbox gira con lo stesso utente del data agent e ne condivide la rete: la policy blocca
   file e rete dal codice generato, ma non è un isolamento a livello di sistema (che richiederebbe un container per
-  esecuzione o seccomp). In Docker il filesystem è comunque in sola lettura fuori dai volumi.
-- Il modello effettivo si legge con la chiave attuale: per le risposte generate con una chiave poi sostituita,
-  o dal data agent con una chiave diversa da quella del back end, l'indicatore resta "non disponibile".
+  esecuzione o seccomp). In Docker il filesystem è comunque in sola lettura fuori dai volumi, la rete del data
+  agent non esce su internet e nel servizio non c'è la chiave OpenRouter. Resta raggiungibile il token interno,
+  che però vale solo sulla rete interna.
+- Il modello effettivo si legge con la chiave attuale: per le risposte generate con una chiave poi sostituita
+  l'indicatore resta "non disponibile".
 - Con i modelli economici le domande che applicano regole articolate ai dati (es. make-good con esclusioni) a
   volte non si concludono nel tempo disponibile: la risposta lo dichiara e riporta i risultati parziali, senza
   inventare numeri (vedi la [valutazione](../eval/README.md)).

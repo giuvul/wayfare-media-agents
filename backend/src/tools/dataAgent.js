@@ -37,7 +37,7 @@ export function createDataAgentClient(config, fetchImpl = fetch) {
   };
 
   return {
-    /** @param {{ signal?: AbortSignal, llm?: { model?: string, api_key?: string }, budgetMs?: number }} [opts] budgetMs: tempo concesso all'analisi */
+    /** @param {{ signal?: AbortSignal, llm?: { model?: string }, budgetMs?: number }} [opts] budgetMs: tempo concesso all'analisi */
     analyze: (task, { signal, llm, budgetMs } = {}) =>
       call("/analyze", {
         method: "POST",
@@ -84,7 +84,7 @@ export function analysisErrorMessage(err) {
   return "l'analista dati non è raggiungibile";
 }
 
-/** @param {() => object} [getLlmOverride] modello e chiave scelti dall'utente nelle impostazioni */
+/** @param {() => object} [getLlmOverride] modello scelto dall'utente nelle impostazioni */
 export function createDataAgentTool(client, getLlmOverride = () => ({})) {
   return tool(
     async ({ task }, runConfig) => {

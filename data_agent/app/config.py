@@ -16,9 +16,10 @@ REPO_DIR = SERVICE_DIR.parent
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=REPO_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 
-    # LLM via OpenRouter (API compatibile OpenAI)
-    openrouter_api_key: SecretStr
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # LLM via OpenRouter (API compatibile OpenAI), attraverso il proxy del back end: il data agent non possiede la
+    # chiave OpenRouter e si autentica al proxy con il token interno
+    llm_proxy_url: str = "http://localhost:3001/internal/llm"
+    llm_proxy_wait_s: float = 600.0  # attesa massima del back end all'avvio, se la pulizia va generata con l'LLM
     llm_model: str
     llm_fallback_models: str = ""  # lista separata da virgole, usata da OpenRouter se il modello principale fallisce
     llm_timeout_s: float = 45.0
@@ -51,6 +52,7 @@ def get_settings() -> Settings:
     return Settings()
 
 
+# OPENROUTER_API_KEY non è tra le impostazioni, ma se fosse nell'ambiente (es. avvio a mano) va tolta comunque
 SECRET_ENV = ("OPENROUTER_API_KEY", "DATA_AGENT_TOKEN")
 
 

@@ -43,8 +43,11 @@ flowchart LR
   DA --> CSV[("CSV campagne<br/>+ dizionario")]
   BE --> DB[("SQLite<br/>cronologia, impostazioni, memoria")]
   BE -. "LLM ed embedding" .-> OR(["OpenRouter"])
-  DA -. "LLM" .-> OR
+  DA -. "LLM via proxy<br/>(token interno)" .-> BE
 ```
+
+Solo il back end conosce la chiave OpenRouter e parla con l'esterno: il data agent chiama il modello attraverso
+il suo proxy interno.
 
 | Componente | Cartella | Ruolo |
 |---|---|---|
@@ -52,11 +55,20 @@ flowchart LR
 | Back end | `backend/` | API, orchestratore ReAct (LangChain.js `createAgent`) con due strumenti, RAG, persistenza |
 | Data agent | `data_agent/` | Microservizio interno: analisi della qualità, pulizia verificata, agente pandas, grafici |
 | Dati | `data/` | Dataset sintetico (9.293 righe con anomalie), dizionario dati, handbook, generatore |
-| Documentazione | `docs/` | [Architettura e decisioni](docs/architettura.md), handbook in PDF |
+| Documentazione | `docs/` | Architettura, scenario, sicurezza, identità visiva, handbook in PDF |
 | Valutazione | `eval/` | [Casi, script e risultati](eval/README.md) della valutazione dell'orchestrazione |
 
-I dettagli (flussi, pipeline RAG e di pulizia, sicurezza, scelte progettuali e loro motivazioni) sono in
-[docs/architettura.md](docs/architettura.md). Le modifiche, commit per commit, sono in [CHANGELOG.md](CHANGELOG.md).
+## Documentazione
+
+| Se vuoi capire... | Leggi |
+|---|---|
+| Lo scenario aziendale, cosa c'è nell'handbook e nel dataset e come si incastrano | [docs/scenario.md](docs/scenario.md) |
+| Come funziona il sistema: componenti, contratti tra i servizi, percorso di una domanda, RAG, pulizia, sandbox, timeout, guasti, deployment e motivazione delle scelte | [docs/architettura.md](docs/architettura.md) |
+| Cosa protegge il sistema, da quali minacce, con quali difese e cosa resta scoperto | [docs/sicurezza.md](docs/sicurezza.md) |
+| Come è stata misurata la qualità dell'orchestrazione e come sono stati scelti i modelli | [eval/README.md](eval/README.md) |
+| Palette, tipografia e asset dell'identità visiva | [docs/brand/README.md](docs/brand/README.md) |
+| Colonne del dataset e regole di qualità | [data/dizionario_dati.md](data/dizionario_dati.md) |
+| Cosa è cambiato, commit per commit | [CHANGELOG.md](CHANGELOG.md) |
 
 ## Stack
 
@@ -105,12 +117,13 @@ preparazione. Ai riavvii successivi la pulizia è già in cache.
 | `frontend` | nginx con la build statica, inoltra `/api` al back end | `127.0.0.1:8080` (`WAYFARE_PORT` per cambiarla) |
 | `backend` | orchestratore e API | no |
 | `ingest` | indicizza la documentazione e termina (idempotente) | no |
-| `data-agent` | analisi e pulizia dei dati | no |
+| `data-agent` | analisi e pulizia dei dati; chiama il modello attraverso il back end, senza accesso a internet | no |
 | `chroma` | vector store | no |
 
 I container girano come utenti non privilegiati, con filesystem in sola lettura, nessuna capability Linux e
 `no-new-privileges`; scrivono solo nei volumi (`storage`, `kb`, `dataset`, `analysis-cache`, `charts`,
-`chroma`). Per ripartire da zero: `docker compose down -v`.
+`chroma`). Il data agent sta su una rete interna senza uscita verso internet e non riceve la chiave OpenRouter.
+Per ripartire da zero: `docker compose down -v`.
 
 ## Avvio in locale, senza Docker
 
@@ -128,7 +141,8 @@ docker run -d --name chroma -p 127.0.0.1:8000:8000 -v "$PWD/chroma_data:/data" c
 cd data_agent
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001
-# al primo avvio prepara il dataset pulito (l'AI scrive il codice di pulizia, poi resta in cache)
+# al primo avvio prepara il dataset pulito: l'AI scrive il codice di pulizia (poi resta in cache).
+# Il modello si chiama attraverso il back end, quindi la pulizia parte quando il back end (passo 4) è avviato.
 
 # 4. Back end (porta 3001), in un altro terminale
 cd backend
@@ -155,7 +169,7 @@ Note:
 (cd backend && npm test)        # orchestratore (modello finto), API, RAG, persistenza, embedding
 (cd frontend && npm test)       # parser SSE, citazioni, formattazione
 (cd data_agent && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pytest)   # sandbox, qualità, API
-(cd data_agent && .venv/bin/pytest -m llm)    # opzionale: chiama davvero il modello e confronta con il ground truth
+(cd data_agent && .venv/bin/pytest -m llm)    # opzionale, con il back end avviato: chiama davvero il modello e confronta con il ground truth
 ```
 
 Lint: `npm run lint` in `backend/` e `frontend/` (ESLint, con le regole degli hook di React nel front end) e
@@ -179,12 +193,15 @@ risposta mediana in 4,4 s e 0,05 USD per l'intera valutazione. Metodo, risultati
 
 ## Sicurezza
 
+In breve qui sotto; minacce, difese e limiti sono descritti per esteso in [docs/sicurezza.md](docs/sicurezza.md).
+
 - **Segreti**: `.env` è escluso da git; la chiave impostata dall'interfaccia è salvata solo sul server (SQLite,
   file con permessi `0600`), non viene mai restituita al browser (solo mascherata) né scritta nei log
   (redazione in pino).
 - **Data agent**: raggiungibile solo dal back end, con token condiviso (`X-Internal-Token`, confronto a tempo
-  costante). Il codice generato dall'LLM gira in un processo separato senza segreti, con policy statica
-  sugli import e sulle funzioni, timeout per esecuzione e limite di concorrenza.
+  costante). Non possiede la chiave OpenRouter: chiama il modello attraverso un proxy del back end, e in Docker
+  non ha accesso a internet. Il codice generato dall'LLM gira in un processo separato senza segreti, con policy
+  statica sugli import e sulle funzioni, timeout per esecuzione e limite di concorrenza.
 - **API**: validazione di ogni input con zod (FastAPI/pydantic nel data agent), limiti di dimensione delle
   richieste, rate limit generale e più stretto sulla chat, helmet, CORS ristretto, errori verso l'utente in
   italiano senza dettagli interni.

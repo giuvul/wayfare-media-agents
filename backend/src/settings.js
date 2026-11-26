@@ -89,10 +89,9 @@ export function createSettingsService({ config, store, fetchImpl = fetch }) {
         return false; // senza catalogo si omette il parametro: una richiesta senza temperatura è sempre accettata
       }
     },
-    /** Override da passare al data agent: il modello sempre, la chiave solo se scelta dall'utente. */
+    /** Override da passare al data agent: solo il modello. La chiave non lascia il back end (proxy /internal/llm). */
     dataAgentOverride() {
-      const s = current();
-      return { model: s.model, ...(s.apiKeySource === "ui" ? { api_key: s.apiKey } : {}) };
+      return { model: current().model };
     },
     async describe() {
       const s = current();

@@ -26,7 +26,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from . import safe_pickle
 from .config import Settings
-from .llm import build_llm
+from .llm import build_llm, wait_for_proxy
 from .quality import Schema, analyze, blocking_problems, numeric, parse_dictionary, residuals
 from .sandbox import Sandbox
 
@@ -253,7 +253,9 @@ def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> Cle
             return save(clean, report, meta["code"], 0, "riusata", meta.get("model", ""), clean_quality)
         log.info("pulizia: il codice precedente non supera più i controlli (%d problemi): rigenero", len(problems))
 
-    llm = llm or build_llm(settings)
+    if llm is None:
+        wait_for_proxy(settings)  # al primo avvio il back end, che fa da proxy verso il modello, può non essere pronto
+        llm = build_llm(settings)
     profile = build_profile(raw, schema, raw_quality)
     dizionario = dictionary_text
     messages = [

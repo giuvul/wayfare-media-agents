@@ -148,11 +148,13 @@ class DataAnalyst:
             righe_valide=len(df), schema=_schema(df), head=df.head(3).to_string(),
             data_estrazione=df["data"].max().strftime("%Y-%m-%d"), max_passi=settings.max_agent_steps,
         )
-        self._llm = build_llm(settings)
+        self._llm = None  # creato alla prima analisi senza modello indicato: all'avvio il proxy può non essere pronto
 
     def analyze(self, task: str, llm=None, timeout_s: float | None = None) -> AnalysisResult:
         """`timeout_s`: tempo concesso dal chiamante (il resto del suo turno), se inferiore a quello configurato."""
-        llm = llm or self._llm
+        if llm is None:
+            self._llm = self._llm or build_llm(self.settings)
+            llm = self._llm
         started = time.monotonic()
         budget = min(self.settings.request_timeout_s, timeout_s or float("inf"))
         # l'esplorazione si ferma prima della fine del budget: il controllo avviene tra un passo e l'altro, quindi

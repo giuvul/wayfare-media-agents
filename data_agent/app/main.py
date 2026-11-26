@@ -11,8 +11,8 @@ Endpoint:
 - PATCH /dataset/rows/{id}  modifica una cella del CSV grezzo
 - GET/PUT /dictionary       dizionario dati (regole di qualità e di calcolo)
 
-Le richieste possono indicare `model` e `api_key`: sono le impostazioni scelte dall'utente nel back end,
-usate solo per quella richiesta e mai registrate nei log.
+Le richieste possono indicare `model`, il modello scelto dall'utente nel back end, usato solo per quella richiesta.
+La chiave OpenRouter non arriva mai qui: le chiamate al modello passano dal proxy del back end (vedi llm.py).
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field
 
 from . import dataset
 from .agent import DataAnalyst
@@ -99,12 +99,9 @@ def require_token(x_internal_token: Annotated[str | None, Header()] = None) -> N
 
 class LlmOverride(BaseModel):
     model: str | None = Field(default=None, max_length=200, pattern=r"^[A-Za-z0-9._:/~-]+$")
-    api_key: SecretStr | None = Field(default=None, max_length=300)
 
     def llm(self, timeout_s: float | None = None):
-        if not self.model and not self.api_key:
-            return None
-        return build_llm(get_settings(), self.model, self.api_key.get_secret_value() if self.api_key else None, timeout_s)
+        return build_llm(get_settings(), self.model, timeout_s) if self.model else None
 
 
 class AnalyzeRequest(LlmOverride):

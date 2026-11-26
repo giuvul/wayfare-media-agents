@@ -6,6 +6,32 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 
 ## [Non rilasciato]
 
+### Aggiunto
+- `docs/scenario.md`: lo scenario aziendale, il contenuto dell'handbook e del dataset, una tabella che collega
+  ogni regola alle colonne che la applicano e al valore del ground truth, le anomalie inserite e la
+  riproducibilità.
+- `docs/sicurezza.md`: beni protetti, minacce con difese e riferimenti al codice e ai test, prompt injection,
+  limiti noti e come verificare.
+- `docs/architettura.md`: contratti HTTP tra front end, back end e data agent (endpoint, timeout, codici di
+  errore) e una tabella di cosa succede quando un componente si guasta.
+- README: indice della documentazione.
+
+### Sicurezza
+- Il data agent non possiede più la chiave OpenRouter. Le chiamate al modello dell'analista e della pulizia
+  passano da un proxy del back end (`/internal/llm`, fuori da `/api` e quindi non pubblicato da nginx): il data
+  agent si autentica con il token interno e il back end aggiunge la chiave in uso, dal `.env` o dalle
+  Impostazioni. Prima la chiave inserita dall'interfaccia veniva passata al data agent nel corpo di `/analyze`.
+  Il proxy accetta solo chat e catalogo dei modelli, ha un rate limit e interrompe la chiamata a valle se il data
+  agent smette di aspettare.
+- In Docker il data agent sta su una rete `internal` senza uscita verso internet, e il compose gli toglie
+  `OPENROUTER_API_KEY` dall'ambiente. Il servizio che esegue codice generato non ha quindi né la chiave né un
+  modo di mandare dati all'esterno.
+- All'avvio il data agent aspetta il back end prima di generare la pulizia con il modello (`LLM_PROXY_URL`).
+- Test: `llmProxy.test.js` (chiave aggiunta solo dal back end, token obbligatorio, errori inoltrati, nessun
+  dettaglio interno) e nuovi casi in `test_llm.py`.
+
+## [6cc1ffd] - 2026-11-26 - Claude Haiku 5.5 come modello predefinito; API key e BYOK nella documentazione
+
 ### Modificato
 - Modello predefinito Claude Haiku 5.5 (`LLM_MODEL`), con riserva DeepSeek V4.1 Flash di un altro fornitore
   (`LLM_FALLBACK_MODELS`). Valutazione completa ripetuta con la configurazione finale: 20/20 casi, tutte le
@@ -272,7 +298,8 @@ Revisione completa del sistema (front end, back end, data agent, configurazione)
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/ddd0934...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/6cc1ffd...HEAD
+[6cc1ffd]: https://github.com/giuvul/wayfare-media-agents/commit/6cc1ffd
 [ddd0934]: https://github.com/giuvul/wayfare-media-agents/commit/ddd0934
 [3f4d1d6]: https://github.com/giuvul/wayfare-media-agents/commit/3f4d1d6
 [c034b4d]: https://github.com/giuvul/wayfare-media-agents/commit/c034b4d

@@ -4,7 +4,9 @@
 #   apri http://localhost:8080   (porta diversa: WAYFARE_PORT=9090 docker compose up -d)
 #
 # Solo il front end è pubblicato, e solo su 127.0.0.1 (l'app non ha autenticazione): back end, data agent e
-# Chroma comunicano su una rete interna. I dati che cambiano (cronologia, impostazioni, modelli locali, vettori,
+# Chroma comunicano su una rete interna. Il data agent, che esegue il codice generato dal modello, sta solo sulla
+# rete `isolata`, senza accesso a internet, e non riceve la chiave OpenRouter: chiama il modello attraverso il
+# proxy del back end. I dati che cambiano (cronologia, impostazioni, modelli locali, vettori,
 # documentazione, dataset, cache e grafici) stanno in volumi e sopravvivono a rebuild e riavvii.
 
 name: wayfare
@@ -37,6 +39,8 @@ services:
     image: wayfare/data-agent
     env_file: .env
     environment:
+      OPENROUTER_API_KEY: "" # prevale sul valore del .env: la chiave resta nel back end
+      LLM_PROXY_URL: http://backend:3001/internal/llm
       # percorsi del container: prevalgono su eventuali valori locali nel .env
       DATA_CSV_PATH: /app/data/campagne_wayfare.csv
       DATA_DICTIONARY_PATH: /app/data/dizionario_dati.md
@@ -46,6 +50,7 @@ services:
       - dataset:/app/data
       - analysis-cache:/app/data_agent/cache
       - charts:/app/data_agent/charts
+    networks: [isolata]
     # al primo avvio l'AI scrive e verifica il codice di pulizia (1-2 minuti); poi resta in cache nel volume
 
   # indicizza la documentazione in Chroma e termina (idempotente: ai riavvii salta i documenti invariati)
@@ -79,6 +84,7 @@ services:
     env_file: .env
     environment: *backend-env
     volumes: *backend-volumes
+    networks: [default, isolata] # internet (OpenRouter) e rete del data agent
     depends_on:
       ingest: { condition: service_completed_successfully }
       data-agent: { condition: service_started }
@@ -92,6 +98,11 @@ services:
       - "127.0.0.1:${WAYFARE_PORT:-8080}:8080"
     depends_on:
       backend: { condition: service_healthy }
+
+networks:
+  default:
+  isolata:
+    internal: true # nessuna uscita verso internet
 
 volumes:
   chroma:

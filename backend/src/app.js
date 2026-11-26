@@ -1,4 +1,5 @@
-// Applicazione Express: chat (JSON o SSE), cronologia, impostazioni, knowledge base, grafici e health check.
+// Applicazione Express: chat (JSON o SSE), cronologia, impostazioni, knowledge base, grafici e health check;
+// su /internal/llm il proxy verso OpenRouter per il data agent.
 import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
@@ -11,6 +12,7 @@ import { conversationsRouter } from "./routes/conversations.js";
 import { embeddingsRouter } from "./routes/embeddings.js";
 import { kbRouter } from "./routes/kb.js";
 import { generationsRouter } from "./routes/generations.js";
+import { llmProxyRouter } from "./routes/llmProxy.js";
 import { settingsRouter } from "./routes/settings.js";
 
 const CHART_ID = /^[0-9a-f]{32}$/;
@@ -18,7 +20,7 @@ const CHART_ID = /^[0-9a-f]{32}$/;
 /**
  * @param {{ config: any, log: import("pino").Logger, getAgent: () => any, checkpointer: any, dataAgent: any,
  *   retriever: any, conversations: any, settings: any, documents: any, indexer: any, embeddings: any,
- *   embeddingSwitcher: any }} deps
+ *   embeddingSwitcher: any, llmFetch?: typeof fetch }} deps llmFetch: fetch verso OpenRouter del proxy (sostituibile nei test)
  */
 export function createApp(deps) {
   const { config, log, dataAgent, retriever, settings } = deps;
@@ -29,7 +31,10 @@ export function createApp(deps) {
   app.set("trust proxy", config.TRUST_PROXY);
   app.use(helmet());
   app.use(cors({ origin: config.FRONTEND_ORIGIN }));
-  app.use(pinoHttp({ logger: log, autoLogging: { ignore: (req) => req.url === "/api/health" || req.url.startsWith("/api/charts/") } }));
+  app.use(pinoHttp({
+    logger: log,
+    autoLogging: { ignore: (req) => req.url === "/api/health" || req.url.startsWith("/api/charts/") || req.url === "/internal/llm/health" },
+  }));
   // limite generale per tutte le API (la chat ha un limite più stretto, definito nel suo router)
   app.use("/api", rateLimit({ windowMs: 60_000, limit: 600, standardHeaders: "draft-8", legacyHeaders: false }));
 
@@ -39,6 +44,8 @@ export function createApp(deps) {
   app.use("/api", generationsRouter(deps));
   app.use("/api", kbRouter(deps));
   app.use("/api", embeddingsRouter(deps));
+  // chiamate al modello del data agent: la chiave resta nel back end (vedi routes/llmProxy.js)
+  app.use("/internal/llm", llmProxyRouter({ ...deps, fetchImpl: deps.llmFetch }));
 
   app.get(
     "/api/charts/:chartId",

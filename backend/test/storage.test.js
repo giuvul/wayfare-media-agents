@@ -46,7 +46,8 @@ test("impostazioni: chiave validata e mai restituita in chiaro, modello dal cata
   assert.equal(settings.version, v0 + 1);
   assert.equal(described.apiKey.masked, "sk-or-v1…1234");
   assert.doesNotMatch(JSON.stringify(described), new RegExp(good));
-  assert.deepEqual(settings.dataAgentOverride(), { model: "deepseek/deepseek-v4.1-flash", api_key: good });
+  assert.deepEqual(settings.dataAgentOverride(), { model: "deepseek/deepseek-v4.1-flash" }); // la chiave resta nel back end
+  assert.equal(settings.get().apiKey, good); // ed è quella che usa il proxy LLM
   await assert.rejects(settings.update({ model: "vendor/no-tools" }), /tool calling/);
   await settings.update({ resetApiKey: true, resetModel: true });
   assert.deepEqual(settings.dataAgentOverride(), { model: "env/model" });

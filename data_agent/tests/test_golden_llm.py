@@ -1,6 +1,6 @@
 """Test con il modello vero: la pulizia generata e le analisi devono coincidere con il ground truth.
 
-Eseguili con `pytest -m llm` (richiedono OPENROUTER_API_KEY e consumano chiamate).
+Eseguili con `pytest -m llm` con il back end avviato: le chiamate al modello passano dal suo proxy (consumano credito).
 """
 
 import contextlib

@@ -12,9 +12,8 @@ sys.path.insert(0, str(REPO_DIR / "data" / "generator"))
 # I test offline non chiamano il modello: valori fittizi solo se manca il .env
 # (le variabili d'ambiente hanno la precedenza sul file, quindi non vanno impostate se il .env esiste).
 if not (REPO_DIR / ".env").exists():
-    os.environ.setdefault("OPENROUTER_API_KEY", "test-key-non-usata")
     os.environ.setdefault("LLM_MODEL", "test/modello")
-    os.environ.setdefault("DATA_AGENT_TOKEN", "test-token")
+    os.environ.setdefault("DATA_AGENT_TOKEN", "test-token-0123456789")
 
 
 @pytest.fixture(scope="session")
