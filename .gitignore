@@ -18,8 +18,8 @@ __pycache__/
 .ruff_cache/
 
 # Runtime data (rigenerabili)
-chroma_data/
-storage/
+/chroma_data/
+/storage/
 data_agent/charts/
 data_agent/cache/
 
