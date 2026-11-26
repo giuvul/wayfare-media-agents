@@ -7,6 +7,7 @@ geometriche piatte e colori pieni.
 |---|---|
 | `wayfare-simbolo.svg` | Simbolo: due triangoli, oltremare `#20419C` e vermiglio `#E44325`, che formano una W |
 | `wayfare-wordmark.svg` | Logotipo "Wayfare Media" (grottesco pesante), in nero |
+| `Banner-Hero.png`, `Banner-Hero-Dark.png` | Banner della schermata iniziale, per tema chiaro e scuro (nell'app in WebP, `frontend/src/assets/`) |
 | `wayfare-design-system.png` | Tavola di riferimento: palette, tipografia, componenti e schermata della chat |
 
 I tracciati del simbolo e del logotipo sono usati così come sono in `frontend/src/components/Brand.jsx`

@@ -8,12 +8,13 @@ export default function ChatView({ thread, title, busy, onSend, onStop, onOpenDo
   const scrollRef = useRef(null);
   const stick = useRef(true); // segue il fondo solo se l'utente non è risalito a leggere
 
+  const messages = thread?.messages ?? [];
   useEffect(() => {
     const el = scrollRef.current;
-    if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [thread]);
+    // la schermata di benvenuto parte dall'alto; una conversazione segue l'ultimo messaggio
+    if (el && stick.current && messages.length > 0) el.scrollTop = el.scrollHeight;
+  }, [thread, messages.length]);
 
-  const messages = thread?.messages ?? [];
   return (
     <div className="chat">
       <header className="view-head">

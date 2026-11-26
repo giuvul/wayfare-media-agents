@@ -4,6 +4,10 @@ export function userFacingError(err) {
   if (/\b401\b|unauthori[sz]ed|invalid api key|no auth/i.test(err.message)) return "La chiave API di OpenRouter non è valida: controllala nelle Impostazioni.";
   if (/\b402\b|insufficient credits|payment required/i.test(err.message)) return "Credito OpenRouter esaurito: ricarica l'account o cambia chiave nelle Impostazioni.";
   if (/429|rate.?limit/i.test(err.message)) return "Il modello AI è momentaneamente sovraccarico. Riprova tra qualche secondo.";
+  // OpenRouter: nessun provider disponibile per il modello scelto con i parametri richiesti
+  if (/no endpoints found|model.*(not found|does not exist)/i.test(err.message)) {
+    return "Il modello scelto non è disponibile su OpenRouter in questo momento: riprova o scegline un altro nelle Impostazioni.";
+  }
   return "Si è verificato un errore durante l'elaborazione. Riprova tra poco.";
 }
 

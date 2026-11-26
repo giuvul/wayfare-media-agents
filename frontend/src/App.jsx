@@ -129,6 +129,9 @@ export default function App() {
   );
 
   const openDoc = useCallback((source, section) => setDocTarget({ source, section }), []);
+  // il pannello del documento appartiene alla conversazione: si chiude cambiando pagina o conversazione
+  const routeKey = `${route.view}/${route.id ?? route.tab ?? ""}`;
+  useEffect(() => setDocTarget(null), [routeKey]);
   const title = currentId ? history?.find((c) => c.id === currentId)?.title : null;
 
   return (

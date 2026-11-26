@@ -7,6 +7,22 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 ## [Non rilasciato]
 
 ### Modificato
+- Schermata iniziale con il banner del brand (`docs/brand/Banner-Hero*.png`, variante per il tema scuro), in
+  WebP a due risoluzioni; domande suggerite allineate tra le colonne anche quando un testo va a capo.
+- Scrollbar sottili nei colori del brand, con lo spazio sempre riservato: il layout non si sposta più quando un
+  contenuto inizia a scorrere.
+- Interfaccia verificata su 19 formati, da 320 px a 2560 px, compresi telefoni in orizzontale, tablet e
+  schermi pieghevoli. Su mobile la chiave API e la ricerca nei dati vanno a capo invece di essere tagliate; sugli
+  schermi bassi intestazione e campo di scrittura si compattano.
+- Messaggio di errore specifico quando OpenRouter non ha provider disponibili per il modello scelto.
+
+### Corretto
+- La schermata iniziale si apriva già scorsa in fondo, con il banner tagliato.
+- Il pannello del documento restava aperto passando alla Knowledge Base o alle Impostazioni.
+
+## [e22efaa] - 2026-11-26 - Identità visiva: design system "Modernismo italiano"
+
+### Modificato
 - Nuova identità visiva dell'interfaccia, direzione "Modernismo italiano" (`docs/brand/`):
   - simbolo e logotipo originali, anche nella favicon;
   - barra laterale oltremare su pagine avorio, con accenti vermiglio, ocra e oliva e angoli quasi squadrati;
@@ -189,7 +205,8 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/56911b7...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/e22efaa...HEAD
+[e22efaa]: https://github.com/giuvul/wayfare-media-agents/commit/e22efaa
 [56911b7]: https://github.com/giuvul/wayfare-media-agents/commit/56911b7
 [b36242f]: https://github.com/giuvul/wayfare-media-agents/commit/b36242f
 [d341ffb]: https://github.com/giuvul/wayfare-media-agents/commit/d341ffb
