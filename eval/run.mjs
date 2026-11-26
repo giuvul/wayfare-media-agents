@@ -10,8 +10,8 @@
 //   node eval/run.mjs --rescore eval/results/<report>.json   # ricalcola i controlli sulle risposte salvate
 //
 // Scrive un report JSON (ogni turno, con eventi e tempi) e uno Markdown in eval/results/.
-// Per confrontare modelli diversi va svuotato LLM_FALLBACK_MODELS: con un modello di riserva attivo OpenRouter può
-// rispondere con quello al posto del modello scelto, senza che l'API lo segnali.
+// Il controllo "modello effettivo" legge da /api/generations quale modello ha servito ogni chiamata del turno:
+// se OpenRouter è passato a un modello di riserva, il caso non è superato (il confronto tra modelli sarebbe falsato).
 // Il costo è la differenza del consumo della chiave OpenRouter letto da /api/settings prima e dopo
 // (include le chiamate del data agent se usa la stessa chiave): lo script non legge mai la chiave.
 import { randomUUID } from "node:crypto";
@@ -70,7 +70,11 @@ async function turn(sessionId, message) {
             charts: d.artifact?.charts?.length ?? 0,
           });
         }
-        if (event === "final") out.answer = d.answer;
+        if (event === "final") {
+          out.answer = d.answer;
+          out.generations = d.generations ?? null; // id OpenRouter delle chiamate al modello del turno
+          out.requestedModel = d.requestedModel ?? null;
+        }
         if (event === "error") out.error = d.message;
       }
     }
@@ -94,6 +98,8 @@ function numbersIn(text) {
   return found.filter(Number.isFinite);
 }
 
+const sameModel = (served, requested) => served === requested || served.startsWith(`${requested}-`);
+
 const routeOf = (steps) => steps.map((s) => s.tool).filter((t, i, a) => t !== a[i - 1]).join(">") || "none";
 
 function check(c, last) {
@@ -114,6 +120,13 @@ function check(c, last) {
     const { value, tol = 0.005, abs = 0 } = typeof n === "number" ? { value: n } : n;
     const ok = nums.some((x) => Math.abs(x - value) <= Math.max(Math.abs(value) * tol, abs));
     checks.push({ name: `numero ${value}`, ok, detail: "" });
+  }
+  if (last.served) {
+    // modelli che hanno risposto davvero, diversi da quello scelto (fallback di OpenRouter)
+    const other = [...new Set(Object.values(last.served).filter(Boolean).map((d) => d.model))].filter(
+      (m) => last.requestedModel && !sameModel(m, last.requestedModel),
+    );
+    checks.push({ name: "modello effettivo", ok: other.length === 0, detail: other.join(", ") });
   }
   if (c.chart) checks.push({ name: "grafico", ok: last.steps.some((s) => s.charts > 0), detail: "" });
   if (c.task) {
@@ -166,6 +179,18 @@ if (opts.rescore) {
   }
   await new Promise((r) => setTimeout(r, 65_000)); // il consumo letto da /api/settings ha una cache di 60 s
   const after = await usage();
+  // dopo l'attesa OpenRouter ha reso disponibili i dettagli delle generazioni: si aggiunge il controllo del modello
+  for (const r of results) {
+    const last = r.turns.at(-1);
+    const ids = [...new Set(Object.values(last.generations ?? {}).flat())];
+    if (ids.length === 0) continue;
+    last.served = {};
+    for (let i = 0; i < ids.length; i += 30) {
+      const res = await fetch(`${opts.base}/api/generations?ids=${ids.slice(i, i + 30).join(",")}`).catch(() => null);
+      if (res?.ok) Object.assign(last.served, (await res.json()).generations);
+    }
+    Object.assign(r, check(byId[r.id], last));
+  }
   cost = before.usage !== null && after.usage !== null ? Number((after.usage - before.usage).toFixed(4)) : null;
   date = new Date().toISOString();
   model = before.model;

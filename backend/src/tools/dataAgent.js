@@ -88,8 +88,8 @@ export function createDataAgentTool(client, getLlmOverride = () => ({})) {
       }
       try {
         const result = await client.analyze(task, { signal: runConfig?.signal, llm: getLlmOverride(), budgetMs });
-        const { answer, charts, table, code, cleaning, steps, duration_ms: durationMs, error } = result;
-        return [formatAnalysis(result), { task, answer, charts, table, code, cleaning, steps, durationMs, error }];
+        const { answer, charts, table, code, cleaning, steps, duration_ms: durationMs, error, generazioni = [] } = result;
+        return [formatAnalysis(result), { task, answer, charts, table, code, cleaning, steps, durationMs, error, generations: generazioni }];
       } catch (err) {
         const message = err.name === "TimeoutError" ? "il data agent non ha risposto in tempo" : err.message;
         return [`ERRORE: ${message}. Spiega all'utente che l'analisi dei dati non è disponibile in questo momento.`, { task, error: message }];

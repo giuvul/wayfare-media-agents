@@ -438,3 +438,6 @@ tr.clickable { cursor: pointer; }
   .kv { grid-template-columns: 1fr; gap: 0; }
   .kv > span { margin-top: 6px; }
 }
+
+/* modello che ha risposto davvero (dati OpenRouter), sotto la risposta */
+.served-model { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: 12.5px; color: var(--muted); }

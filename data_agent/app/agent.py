@@ -108,6 +108,8 @@ class AnalysisResult:
     error: str | None = None
     duration_ms: int = 0
     complete: bool = True  # False se passi o tempo sono finiti e la risposta è stata forzata con risultati parziali
+    # id OpenRouter delle chiamate al modello: il back end li usa per sapere quale modello ha risposto davvero
+    generations: list[str] = field(default_factory=list)
 
 
 def _schema(df: pd.DataFrame) -> str:
@@ -123,6 +125,12 @@ def _schema(df: pd.DataFrame) -> str:
             extra = "valori: " + ", ".join(map(str, values[:9])) + (" ..." if len(values) > 9 else "")
         lines.append(f"- {col} ({s.dtype}): {extra}")
     return "\n".join(lines)
+
+
+def _generation_id(message) -> str | None:
+    """Id della generazione OpenRouter ("gen-..."), che langchain-openai conserva in response_metadata."""
+    gid = getattr(message, "response_metadata", {}).get("id") if isinstance(message, AIMessage) else None
+    return gid if isinstance(gid, str) and gid.startswith("gen-") else None
 
 
 def _text(message: AIMessage) -> str:
@@ -207,6 +215,8 @@ class DataAnalyst:
                                               HumanMessage(FINALIZE_PROMPT)])
                 except Exception as exc:
                     result.error = f"Analisi non riuscita: {type(exc).__name__}: {exc}"[:500]
+            result.generations = [g for m in [*messages, final] if (g := _generation_id(m))]
+            result.generations = list(dict.fromkeys(result.generations))  # final può essere già in messages
             result.answer = _text(final) if final else ""
             if not result.answer and not result.error:
                 result.error = (f"Analisi interrotta dopo {self.settings.max_agent_steps} passi senza una conclusione."

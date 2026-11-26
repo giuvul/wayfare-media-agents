@@ -94,3 +94,15 @@ test("errore del data agent: lo step risulta fallito ma il turno si chiude", asy
   assert.equal(res.steps[0].ok, false);
   assert.match(res.steps[0].artifact.error, /503/);
 });
+
+test("il turno raccoglie gli id delle generazioni di orchestratore e analista, solo del turno corrente", async () => {
+  const analyst = createDataAgentTool({ analyze: async () => ({ answer: "177 campagne.", charts: [], steps: 1, duration_ms: 5, generazioni: ["gen-analista-1"] }) });
+  const model = new ScriptedChatModel(["Ciao!", call("c1", "analizza_dati", { task: "conta le campagne" }), "Sono 177."]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools: [tools[0], analyst], maxModelCalls: 6 });
+  const sessionId = randomUUID();
+  await runTurn({ agent, checkpointer, sessionId, message: "ciao" });
+  const events = [];
+  const res = await runTurn({ agent, checkpointer, sessionId, message: "quante campagne?", onEvent: (e, d) => events.push([e, d]) });
+  assert.deepEqual(res.generations, { orchestratore: ["gen-scripted-2", "gen-scripted-3"], analista: ["gen-analista-1"] });
+  assert.deepEqual(events.find(([e]) => e === "final")[1].generations, res.generations);
+});

@@ -8,6 +8,7 @@ import { createLogger } from "./logger.js";
 import { createDocumentStore } from "./rag/documents.js";
 import { createIndexer } from "./rag/ingest.js";
 import { createRetriever } from "./rag/retriever.js";
+import { createGenerationService } from "./generations.js";
 import { createSettingsService } from "./settings.js";
 import { createCheckpointer, createConversationStore, createSettingsStore, openDatabase } from "./storage/db.js";
 import { createDataAgentClient, createDataAgentTool } from "./tools/dataAgent.js";
@@ -38,6 +39,7 @@ const getAgent = createAgentProvider({
 
 const app = createApp({
   config, log, getAgent, checkpointer, dataAgent, retriever, conversations, settings, documents, indexer, embeddings, embeddingSwitcher,
+  generations: createGenerationService({ config, settings }),
 });
 const server = app.listen(config.BACKEND_PORT, config.BACKEND_HOST, () => {
   log.info({ port: config.BACKEND_PORT, model: settings.get().model, embedding: embeddings.current().key }, "back end avviato");

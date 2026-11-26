@@ -60,6 +60,15 @@ sequenceDiagram
 
 Eventi SSE verso il front end: `status`, `tool_start`, `tool_end`, `token`, `final`, `error`.
 
+**Modello effettivo** (`backend/src/generations.js`). Con i modelli di riserva attivi (`LLM_FALLBACK_MODELS`)
+OpenRouter può rispondere con un modello diverso da quello scelto, e la risposta in streaming non lo segnala in
+modo affidabile. Ogni chiamata al modello ha però un id di generazione (`gen-...`): il turno raccoglie quelli
+dell'orchestratore (id dei messaggi del modello) e quelli dell'analista (restituiti dal data agent in
+`generazioni`) e li manda nell'evento `final`, insieme al modello scelto (`requestedModel`). Il front end li
+passa a `GET /api/generations`, che interroga l'endpoint gratuito `/generation` di OpenRouter con la chiave del
+server e restituisce modello, provider e costo. I dati compaiono su OpenRouter qualche secondo dopo la risposta
+(prima: 404), quindi il front end riprova ogni 4 s per circa un minuto; la risposta non aspetta questo controllo.
+
 ## 3. Documentazione e RAG (`backend/src/rag/`, `backend/src/embeddings/`)
 
 **Indicizzazione.** La fonte canonica è il Markdown in `data/kb/` (modificabile dall'interfaccia); i PDF sono
@@ -203,11 +212,14 @@ front end.
 | JavaScript, non TypeScript | Scelta del progetto; i confini sono tipizzati a runtime con zod (back end) e pydantic (data agent) |
 | Scadenza del turno propagata agli strumenti | I timeout fissi per livello non impediscono a più chiamate in sequenza di superare il tempo del turno; con la scadenza ogni livello sa quanto tempo gli resta |
 | Temperatura 0 solo dove il modello la accetta | Rende ripetibili numeri e codice dell'analista; i modelli più recenti di Anthropic e OpenAI non la accettano e, con `require_parameters`, OpenRouter rifiuterebbe la richiesta. Il supporto si legge dal catalogo OpenRouter |
+| Modello effettivo letto da OpenRouter dopo la risposta | Il modello che ha risposto si conosce con certezza solo dall'endpoint `/generation`; interrogarlo dopo la risposta non rallenta la chat, e la chiave resta sul server |
 | Valutazione end-to-end separata dai test | I test unitari usano un modello finto e sono gratuiti e deterministici; la qualità dell'orchestrazione si misura solo con il modello vero, su casi con risultato atteso |
 
 ## 9. Limiti noti
 
 - Nessuna autenticazione degli utenti: uso locale o su rete interna.
+- Il modello effettivo si legge con la chiave attuale: per le risposte generate con una chiave poi sostituita,
+  o dal data agent con una chiave diversa da quella del back end, l'indicatore resta "non disponibile".
 - Con i modelli economici le domande che applicano regole articolate ai dati (es. make-good con esclusioni) a
   volte non si concludono nel tempo disponibile: la risposta lo dichiara e riporta i risultati parziali, senza
   inventare numeri (vedi la [valutazione](../eval/README.md)).

@@ -95,12 +95,16 @@ export const HOLD_CHARS = 160;
 
 /**
  * Esegue un turno di conversazione ed emette eventi per l'interfaccia:
- *  tool_start {id, tool, args, thought} · tool_end {id, tool, ok, durationMs, artifact} · token {text} · final {answer, steps}
+ *  tool_start {id, tool, args, thought} · tool_end {id, tool, ok, durationMs, artifact} · token {text} ·
+ *  final {answer, steps, generations}
+ * `generations`: id OpenRouter delle chiamate al modello del turno, dell'orchestratore e dell'analista dati, per
+ * risalire al modello che ha risposto davvero (vedi generations.js).
  * `thought` è il ragionamento visibile: il parametro `motivo` dello strumento o, in mancanza, il testo che il
  * modello ha scritto prima della chiamata. I token emessi appartengono sempre alla risposta.
  */
 export async function runTurn({ agent, checkpointer, sessionId, message, signal, deadline, onEvent = () => {} }) {
   const steps = [];
+  const orchestratorGenerations = [];
   const started = new Map();
   let answer = "";
   // Gli aggiornamenti dei middleware possono riproporre l'intera cronologia: si considerano solo i messaggi
@@ -149,6 +153,8 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
         if (msg.id) {
           if (seen.has(msg.id)) continue;
           seen.add(msg.id);
+          // l'id di un messaggio del modello è l'id della generazione OpenRouter
+          if (AIMessage.isInstance(msg) && msg.id.startsWith("gen-")) orchestratorGenerations.push(msg.id);
         }
         if (AIMessage.isInstance(msg) && msg.tool_calls?.length) {
           const thought = textOf(msg);
@@ -173,7 +179,11 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
       }
     }
   }
-  const result = { answer: answer.trim(), steps };
+  const generations = {
+    orchestratore: orchestratorGenerations,
+    analista: steps.flatMap((s) => s.artifact?.generations ?? []),
+  };
+  const result = { answer: answer.trim(), steps, generations };
   onEvent("final", result);
   return result;
 }

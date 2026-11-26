@@ -76,7 +76,12 @@ export default function App() {
         else if (event === "tool_start") update(id, (m) => ({ ...m, text: "", steps: [...m.steps, { ...data, running: true }] }));
         else if (event === "tool_end") update(id, (m) => ({ ...m, steps: m.steps.map((s) => (s.id === data.id ? { ...s, ...data, running: false } : s)) }));
         else if (event === "token") update(id, (m) => ({ ...m, text: m.text + data.text }));
-        else if (event === "final") update(id, (m) => ({ ...m, text: data.answer, steps: data.steps, status: "done", durationMs: Date.now() - m.startedAt }));
+        else if (event === "final") {
+          update(id, (m) => ({
+            ...m, text: data.answer, steps: data.steps, status: "done", durationMs: Date.now() - m.startedAt,
+            generations: data.generations, requestedModel: data.requestedModel,
+          }));
+        }
         else if (event === "error") update(id, (m) => ({ ...m, status: "error", error: data.message, steps: m.steps.map((s) => ({ ...s, running: false })) }));
       };
 

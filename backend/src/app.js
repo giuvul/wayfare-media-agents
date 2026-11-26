@@ -10,6 +10,7 @@ import { chatRouter } from "./routes/chat.js";
 import { conversationsRouter } from "./routes/conversations.js";
 import { embeddingsRouter } from "./routes/embeddings.js";
 import { kbRouter } from "./routes/kb.js";
+import { generationsRouter } from "./routes/generations.js";
 import { settingsRouter } from "./routes/settings.js";
 
 const CHART_ID = /^[0-9a-f]{32}$/;
@@ -35,6 +36,7 @@ export function createApp(deps) {
   app.use("/api", chatRouter({ ...deps, activeSessions }));
   app.use("/api", conversationsRouter({ ...deps, activeSessions }));
   app.use("/api", settingsRouter(deps));
+  app.use("/api", generationsRouter(deps));
   app.use("/api", kbRouter(deps));
   app.use("/api", embeddingsRouter(deps));
 

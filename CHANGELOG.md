@@ -6,6 +6,17 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 
 ## [Non rilasciato]
 
+### Aggiunto
+- Modello effettivo sotto ogni risposta: modello, provider e costo delle chiamate di orchestratore e analista
+  dati, letti dall'endpoint `/generation` di OpenRouter tramite i loro id. Se OpenRouter ha risposto con un
+  modello di riserva compare l'avviso "Modello di riserva al posto di …". Nuova API `GET /api/generations`; il
+  data agent restituisce gli id delle sue chiamate (`generazioni`); l'evento `final` porta `generations` e
+  `requestedModel`, salvati anche nella cronologia.
+- Valutazione: controllo "modello effettivo", che fa fallire un caso servito da un modello diverso da quello
+  scelto.
+
+## [b36242f] - 2026-11-25 - Confronto tra modelli e temperatura solo dove supportata
+
 ### Corretto
 - I modelli più recenti di Anthropic e OpenAI (es. Claude Haiku 5.5, GPT-6 Luna) non funzionavano: non accettano il
   parametro `temperature` e, con `provider.require_parameters`, OpenRouter rifiutava la richiesta (404). Con il
@@ -166,7 +177,8 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/d341ffb...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/b36242f...HEAD
+[b36242f]: https://github.com/giuvul/wayfare-media-agents/commit/b36242f
 [d341ffb]: https://github.com/giuvul/wayfare-media-agents/commit/d341ffb
 [5682f8e]: https://github.com/giuvul/wayfare-media-agents/commit/5682f8e
 [ac52964]: https://github.com/giuvul/wayfare-media-agents/commit/ac52964

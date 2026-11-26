@@ -12,7 +12,7 @@ const ChatRequest = z.object({
   sessionId: z.uuid("sessionId deve essere un UUID."),
 });
 
-export function chatRouter({ config, getAgent, checkpointer, conversations, activeSessions }) {
+export function chatRouter({ config, getAgent, checkpointer, conversations, activeSessions, settings }) {
   const router = express.Router();
   router.use(express.json({ limit: "16kb" }));
   const limiter = rateLimit({
@@ -40,7 +40,9 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
     const conversation = conversations.ensure(sessionId, message);
     conversations.addMessage(sessionId, { id: randomUUID(), role: "user", text: message });
     const started = Date.now();
-    const assistant = { id: randomUUID(), role: "assistant", text: "", steps: [], status: "done" };
+    // modello scelto al momento del turno: l'interfaccia lo confronta con quello che ha risposto davvero
+    const requestedModel = settings?.get().model ?? config.LLM_MODEL;
+    const assistant = { id: randomUUID(), role: "assistant", text: "", steps: [], status: "done", requestedModel };
     // gli step arrivati prima di un errore restano visibili anche nella cronologia
     const partial = new Map();
     const track = (event, data) => {
@@ -71,10 +73,10 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
         deadline: started + config.CHAT_TIMEOUT_MS,
         onEvent: (event, data) => {
           track(event, data);
-          send(event, data);
+          send(event, event === "final" ? { ...data, requestedModel } : data);
         },
       });
-      Object.assign(assistant, { text: result.answer, steps: result.steps });
+      Object.assign(assistant, { text: result.answer, steps: result.steps, generations: result.generations });
     } catch (err) {
       const stopped = clientGone.signal.aborted;
       Object.assign(assistant, {
@@ -93,7 +95,7 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
 
     if (wantsStream) return res.end();
     if (assistant.status === "error") return res.status(500).json({ error: assistant.error });
-    return res.json({ answer: assistant.text, steps: assistant.steps, conversation });
+    return res.json({ answer: assistant.text, steps: assistant.steps, generations: assistant.generations, requestedModel, conversation });
   });
 
   return router;

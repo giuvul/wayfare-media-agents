@@ -21,6 +21,8 @@ Progetto finale del modulo "Sviluppa un agente AI avanzato" del master S2I. Dati
 - **Citazioni navigabili**: `[§4.3]` apre il documento in un pannello laterale (anche a schermo intero) con la
   sezione evidenziata.
 - **Analisi dei dati** con scheda Grafico / Dati / Codice, mostrata a risposta completa.
+- **Modello effettivo** sotto ogni risposta (modello, provider e costo, dai dati di OpenRouter), con un avviso se
+  ha risposto un modello di riserva al posto di quello scelto.
 - **Cronologia** delle conversazioni salvata sul server, con eliminazione; memoria dell'agente persistente.
 - **Knowledge Base** consultabile e modificabile: documenti (reindicizzati a ogni salvataggio), dati grezzi e
   puliti con modifica delle celle, dizionario dati, pulizia con analisi della qualità e codice.

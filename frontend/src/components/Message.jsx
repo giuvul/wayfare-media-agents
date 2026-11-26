@@ -1,5 +1,6 @@
 import AnalysisCard from "./AnalysisCard.jsx";
 import Markdown from "./Markdown.jsx";
+import ModelInfo from "./ModelInfo.jsx";
 import Reasoning from "./Reasoning.jsx";
 import Sources from "./Sources.jsx";
 
@@ -35,6 +36,7 @@ export default function Message({ message, onOpenDoc }) {
         {/* grafici, dati e fonti compaiono a risposta completa: niente salti del layout durante lo streaming */}
         {!live && analyses.map((step) => <AnalysisCard key={step.id} artifact={step.artifact} />)}
         {!live && sources.length > 0 && <Sources sources={sources} onOpenDoc={onOpenDoc} />}
+        {!live && <ModelInfo generations={message.generations} requested={message.requestedModel} />}
       </div>
     </div>
   );

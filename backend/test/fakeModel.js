@@ -20,7 +20,7 @@ export class ScriptedChatModel extends BaseChatModel {
     const next = this.responses[this.calls++];
     if (next instanceof Error) throw next;
     const { content = "", tool_calls: calls = [] } = typeof next === "string" ? { content: next } : next;
-    const id = `scripted-${this.calls}`; // come un provider reale: un id diverso per ogni chiamata
+    const id = `gen-scripted-${this.calls}`; // come OpenRouter: un id di generazione diverso per ogni chiamata
     for (let i = 0; i < content.length; i += 7) {
       const text = content.slice(i, i + 7);
       const chunk = new ChatGenerationChunk({ text, message: new AIMessageChunk({ content: text, id }) });

@@ -46,6 +46,7 @@ export const api = {
   settings: () => request("/settings"),
   updateSettings: (body) => request("/settings", { method: "PUT", body }),
   models: (q, signal) => request(`/models?${qs({ q })}`, { signal }),
+  generations: (ids, signal) => request(`/generations?${qs({ ids: ids.join(",") })}`, { signal }),
   embeddings: () => request("/embeddings"),
   embeddingModels: (q, signal) => request(`/embeddings/remote?${qs({ q })}`, { signal }),
   localEmbeddings: () => request("/embeddings/local"),

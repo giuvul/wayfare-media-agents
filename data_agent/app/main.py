@@ -135,6 +135,7 @@ class AnalyzeResponse(BaseModel):
     duration_ms: int
     error: str | None
     completa: bool  # False: passi o tempo esauriti, la risposta riporta risultati parziali
+    generazioni: list[str] = []  # id OpenRouter delle chiamate al modello (per verificare quale modello ha risposto)
 
 
 @app.get("/health")
@@ -165,6 +166,7 @@ async def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
         answer=result.answer, code=result.code, charts=result.charts, table=result.table,
         cleaning={"fonte": data.source, "report": data.report, **data.stats},
         steps=result.steps, duration_ms=result.duration_ms, error=result.error, completa=result.complete,
+        generazioni=result.generations,
     )
 
 

@@ -32,7 +32,8 @@ Per ogni caso: **percorso** degli strumenti (accettati, il primo è l'ottimale: 
 per il CPM effettivo, perché consultare prima la definizione è legittimo), **citazioni** `[§x.y]`, **testo**
 atteso (espressioni regolari), **numeri** dal ground truth in formato italiano o inglese (anche "230,6 milioni"),
 presenza del **grafico**, contenuto del **compito** passato
-all'analista.
+all'analista e **modello effettivo**: dopo l'esecuzione lo script legge da `/api/generations` quale modello ha
+servito ogni chiamata del turno, e un caso servito da un modello di riserva non è superato.
 
 ## Risultati
 
@@ -58,7 +59,7 @@ lavori a Venezia 3/3, sconti fuori policy 2/3 (stesso motivo), tempo massimo 65 
 Stessi 20 casi più 3 ripetizioni dei casi "regola applicata ai dati", con tre modelli della stessa fascia (piccoli,
 veloci ed economici) di tre fornitori, scelti dalle Impostazioni così che li usino sia l'orchestratore sia
 l'analista. Il modello di riserva è disattivato (`LLM_FALLBACK_MODELS` vuoto): con la riserva attiva OpenRouter
-può rispondere con un altro modello senza segnalarlo. Report in
+può rispondere con un altro modello. (Il controllo del modello effettivo è stato aggiunto dopo questo confronto.) Report in
 [`results/confronto-2026-11-25/`](results/confronto-2026-11-25/).
 
 | Modello | Prezzo $/M (in/out) | Percorso corretto | Superati | Ripetizioni (9) | Mediana | 90° perc. | Costo* |
