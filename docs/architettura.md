@@ -207,6 +207,7 @@ front end.
 | Una collection per modello di embedding | Cambiare modello non distrugge l'indice precedente: il cambio è reversibile e il ritorno è quasi istantaneo |
 | Embedding locali con Transformers.js nel back end | Nessun servizio aggiuntivo; ONNX quantizzato su CPU; catalogo curato perché ogni famiglia richiede pooling e prefissi propri |
 | SQLite per cronologia e impostazioni | Persistenza server-side senza un database da gestire; adatto a un uso interno |
+| Design system come token CSS, font inclusi nel build | Un solo foglio di stile con variabili per tema chiaro e scuro (palette in `docs/brand/`); font OFL dai pacchetti `@fontsource-variable`, così l'app non dipende da servizi esterni |
 | SSE consumato con `fetch` | `EventSource` non supporta POST; `fetch` permette corpo JSON, interruzione e timeout |
 | Grafici PNG (matplotlib/seaborn) | Requisito del progetto; la vista "Dati" affianca la tabella con i numeri |
 | JavaScript, non TypeScript | Scelta del progetto; i confini sono tipizzati a runtime con zod (back end) e pydantic (data agent) |

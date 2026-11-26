@@ -6,6 +6,18 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 
 ## [Non rilasciato]
 
+### Modificato
+- Nuova identità visiva dell'interfaccia, direzione "Modernismo italiano" (`docs/brand/`):
+  - simbolo e logotipo originali, anche nella favicon;
+  - barra laterale oltremare su pagine avorio, con accenti vermiglio, ocra e oliva e angoli quasi squadrati;
+  - titoli in Figtree e testi in Inter, inclusi nel build;
+  - illustrazione modernista nella schermata iniziale, con un'icona per ogni gruppo di domande;
+  - contrasto WCAG AA verificato per ogni coppia testo/sfondo, in chiaro e in scuro.
+- Grafici del data agent nella palette del brand, verificata per la distinguibilità con deficit nella visione
+  dei colori.
+
+## [56911b7] - 2026-11-26 - Modello effettivo sotto ogni risposta
+
 ### Aggiunto
 - Modello effettivo sotto ogni risposta: modello, provider e costo delle chiamate di orchestratore e analista
   dati, letti dall'endpoint `/generation` di OpenRouter tramite i loro id. Se OpenRouter ha risposto con un
@@ -177,7 +189,8 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/b36242f...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/56911b7...HEAD
+[56911b7]: https://github.com/giuvul/wayfare-media-agents/commit/56911b7
 [b36242f]: https://github.com/giuvul/wayfare-media-agents/commit/b36242f
 [d341ffb]: https://github.com/giuvul/wayfare-media-agents/commit/d341ffb
 [5682f8e]: https://github.com/giuvul/wayfare-media-agents/commit/5682f8e

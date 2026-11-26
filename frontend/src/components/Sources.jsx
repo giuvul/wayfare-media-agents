@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { IconDoc } from "./Icons.jsx";
+import { IconBook, IconDoc } from "./Icons.jsx";
 
 export default function Sources({ sources, onOpenDoc }) {
   const unique = [...new Map(sources.map((s) => [`${s.source}#${s.section}`, s])).values()].sort((a, b) =>
@@ -18,6 +18,7 @@ export default function Sources({ sources, onOpenDoc }) {
           return (
             <button key={key} type="button" className={`chip ${open === key ? "chip-active" : ""}`} aria-expanded={open === key}
               onClick={() => setOpen(open === key ? null : key)}>
+              <IconBook size={14} />
               §{s.section} {s.sectionTitle}{s.page ? ` · p. ${s.page}` : ""}
             </button>
           );

@@ -26,6 +26,8 @@ Progetto finale del modulo "Sviluppa un agente AI avanzato" del master S2I. Dati
 - **Cronologia** delle conversazioni salvata sul server, con eliminazione; memoria dell'agente persistente.
 - **Knowledge Base** consultabile e modificabile: documenti (reindicizzati a ogni salvataggio), dati grezzi e
   puliti con modifica delle celle, dizionario dati, pulizia con analisi della qualità e codice.
+- **Identità visiva** in stile modernismo italiano, con tema chiaro e scuro e contrasto verificato
+  ([docs/brand](docs/brand/README.md)).
 - **Impostazioni**: chiave OpenRouter, modello linguistico e modello di embedding scelti dai cataloghi di
   OpenRouter, oppure embedding calcolati in locale con verifica delle risorse della macchina.
 

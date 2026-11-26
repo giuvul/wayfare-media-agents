@@ -88,15 +88,17 @@ def _configure_matplotlib() -> None:
     import matplotlib.pyplot as plt
     from cycler import cycler
 
-    # Palette categoriale validata per il daltonismo (ordine fisso, mai ciclata a caso)
-    palette = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
+    # Palette del brand (oltremare, vermiglio, ocra, oliva), in ordine fisso: oltremare e oliva leggermente
+    # schiariti/saturati per restare distinguibili anche con deficit nella visione dei colori. Il quinto colore,
+    # neutro, è per "Altro". L'ocra ha poco contrasto sul fondo: la tabella dei dati è sempre accanto al grafico.
+    palette = ["#3651BC", "#E4472E", "#E3A72F", "#6F8C2B", "#8A857A"]
     plt.rcParams.update({
-        "figure.figsize": (9, 5), "figure.facecolor": "#fcfcfb", "axes.facecolor": "#fcfcfb",
-        "axes.prop_cycle": cycler(color=palette), "axes.edgecolor": "#c3c2b7", "axes.linewidth": 0.8,
+        "figure.figsize": (9, 5), "figure.facecolor": "#FDFCF8", "axes.facecolor": "#FDFCF8",
+        "axes.prop_cycle": cycler(color=palette), "axes.edgecolor": "#C9C3B4", "axes.linewidth": 0.8,
         "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True, "axes.axisbelow": True,
-        "grid.color": "#e6e5e0", "grid.linewidth": 0.8, "axes.titlesize": 13, "axes.titleweight": "bold",
-        "axes.titlelocation": "left", "axes.labelcolor": "#52514e", "axes.titlecolor": "#0b0b0b",
-        "xtick.color": "#52514e", "ytick.color": "#52514e", "text.color": "#0b0b0b",
+        "grid.color": "#E8E3D6", "grid.linewidth": 0.8, "axes.titlesize": 13, "axes.titleweight": "bold",
+        "axes.titlelocation": "left", "axes.labelcolor": "#4A4740", "axes.titlecolor": "#1A1A1A",
+        "xtick.color": "#4A4740", "ytick.color": "#4A4740", "text.color": "#1A1A1A",
         "lines.linewidth": 2.0, "lines.markersize": 6, "legend.frameon": False, "font.size": 10,
     })
 

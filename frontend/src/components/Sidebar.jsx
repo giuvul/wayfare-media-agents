@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { groupByDay } from "../format.js";
 import { navigate } from "../router.js";
+import { BrandMark, Wordmark } from "./Brand.jsx";
 import { IconBook, IconChat, IconPlus, IconSettings, IconTrash } from "./Icons.jsx";
 
 function statusOf(health) {
@@ -56,17 +57,14 @@ export default function Sidebar({ route, history, busyIds, health, onDelete, ope
       {open && <div className="sidebar-scrim" onClick={onClose} aria-hidden="true" />}
       <nav className={`sidebar${open ? " is-open" : ""}`} aria-label="Navigazione">
         <div className="brand">
-          <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-            <rect width="32" height="32" rx="8" />
-            <path d="M7 21c5-1 9-5 11-11l2 2c-1 3 0 5 2 6l3-1-1 3c-3 1-6 0-8-2-3 2-6 3-9 3z" />
-          </svg>
-          <div>
-            <div className="brand-name">Wayfare Media</div>
-            <div className="brand-sub">Media Sales &amp; Campaign Performance</div>
-          </div>
+          <a className="brand-lockup" href="#/" onClick={onClose}>
+            <BrandMark />
+            <Wordmark />
+          </a>
+          <div className="brand-sub">Assistente IA per Media Sales &amp; Campaign Performance</div>
         </div>
 
-        <button type="button" className="btn btn-primary btn-block" onClick={() => go("/")}>
+        <button type="button" className="btn btn-sidebar btn-block" onClick={() => go("/")}>
           <IconPlus size={16} /> Nuova chat
         </button>
 

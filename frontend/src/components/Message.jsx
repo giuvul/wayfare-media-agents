@@ -1,4 +1,5 @@
 import AnalysisCard from "./AnalysisCard.jsx";
+import { BrandMark } from "./Brand.jsx";
 import Markdown from "./Markdown.jsx";
 import ModelInfo from "./ModelInfo.jsx";
 import Reasoning from "./Reasoning.jsx";
@@ -28,7 +29,7 @@ export default function Message({ message, onOpenDoc }) {
 
   return (
     <div className="msg msg-assistant">
-      <div className="avatar" aria-hidden="true">W</div>
+      <div className="avatar" aria-hidden="true"><BrandMark /></div>
       <div className="msg-body">
         <Reasoning message={message} live={live} onOpenDoc={onOpenDoc} />
         {message.text && <Markdown className="answer prose" onCite={openCitation}>{message.text}</Markdown>}

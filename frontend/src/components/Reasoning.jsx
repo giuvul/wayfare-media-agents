@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { formatCell, formatDuration, TOOL_LABELS } from "../format.js";
-import { IconChart, IconCheck, IconChevron, IconDoc } from "./Icons.jsx";
+import { IconChart, IconChevron, IconDoc, IconSpark } from "./Icons.jsx";
 import Markdown from "./Markdown.jsx";
 
 function Cleaning({ cleaning }) {
@@ -83,14 +83,19 @@ export default function Reasoning({ message, live, onOpenDoc }) {
   if (!live && steps.length === 0) return null;
   const running = steps.find((s) => s.running);
   const liveLabel = running ? TOOL_LABELS[running.tool]?.running : steps.length ? "Preparo la risposta…" : "Sto ragionando sulla richiesta…";
-  const summary = live
-    ? liveLabel
-    : `Ragionamento · ${steps.length} ${steps.length === 1 ? "passaggio" : "passaggi"}${message.durationMs ? ` · ${formatDuration(message.durationMs)}` : ""}`;
+  const summary = live ? (
+    liveLabel
+  ) : (
+    <>
+      <strong>Ragionamento</strong> · {steps.length} {steps.length === 1 ? "passaggio" : "passaggi"}
+      {message.durationMs ? ` · ${formatDuration(message.durationMs)}` : ""}
+    </>
+  );
 
   return (
     <div className={`reasoning${open ? " is-open" : ""}`}>
       <button type="button" className="reasoning-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        {live ? <span className="spinner spinner-sm" /> : <IconCheck size={15} />}
+        {live ? <span className="spinner spinner-sm" /> : <IconSpark size={15} />}
         <span>{summary}</span>
         <IconChevron size={14} className="chevron" />
       </button>
