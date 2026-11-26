@@ -4,6 +4,24 @@ import Composer from "./Composer.jsx";
 import Message from "./Message.jsx";
 import Welcome from "./Welcome.jsx";
 
+/** Segnaposto mentre la conversazione salvata arriva dal server. */
+function ConversationSkeleton() {
+  return (
+    <div className="skeleton" role="status" aria-label="Caricamento della conversazione">
+      <div className="msg msg-user"><div className="sk sk-bubble" /></div>
+      <div className="msg msg-assistant">
+        <div className="sk sk-avatar" />
+        <div className="msg-body">
+          <div className="sk sk-bar" />
+          <div className="sk sk-line" />
+          <div className="sk sk-line" />
+          <div className="sk sk-line sk-short" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ChatView({ thread, title, busy, onSend, onStop, onOpenDoc }) {
   const scrollRef = useRef(null);
   const stick = useRef(true); // segue il fondo solo se l'utente non è risalito a leggere
@@ -30,7 +48,7 @@ export default function ChatView({ thread, title, busy, onSend, onStop, onOpenDo
         }}
       >
         {thread?.error && <div className="notice notice-error">{thread.error}</div>}
-        {thread?.loading && <p className="muted">Caricamento della conversazione…</p>}
+        {thread?.loading && <ConversationSkeleton />}
         {!thread?.loading && !thread?.error && messages.length === 0 && <Welcome onPick={onSend} />}
         {messages.map((m) => (
           <Message key={m.id} message={m} onOpenDoc={onOpenDoc} />

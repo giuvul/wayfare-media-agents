@@ -489,6 +489,21 @@ td.editing input { width: 100%; min-width: 110px; padding: 4px 6px; border: 1px 
   .doc-scroll { padding: 8px 14px 20px; }
 }
 
+/* Segnaposto di caricamento */
+.sk { background: var(--surface-2); border-radius: var(--radius-sm); position: relative; overflow: hidden; }
+.sk::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 35%), transparent); animation: sk-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-color-scheme: dark) { .sk::after { background: linear-gradient(90deg, transparent, rgb(255 255 255 / 6%), transparent); } }
+@keyframes sk-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
+.sk-bubble { width: min(420px, 70%); height: 44px; }
+.sk-avatar { width: 32px; height: 32px; flex: none; }
+.sk-bar { height: 36px; }
+.sk-line { height: 14px; }
+.sk-short { width: 55%; }
+
 /* Schermi bassi (telefono in orizzontale): più spazio alla conversazione */
 @media (max-height: 520px) {
   .view-head { padding-top: 8px; padding-bottom: 8px; }

@@ -9,6 +9,8 @@ import Settings from "./components/Settings.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import { navigate, useRoute } from "./router.js";
 
+const LOADING_THREAD = { messages: [], loading: true };
+
 export default function App() {
   const route = useRoute();
   const [threads, setThreads] = useState({}); // id conversazione -> { messages, loading, error }
@@ -143,7 +145,8 @@ export default function App() {
           <IconMenu />
         </button>
         {route.view === "chat" && (
-          <ChatView key={currentId ?? "new"} thread={currentId ? threads[currentId] : null} title={title}
+          // una conversazione salvata non ancora caricata è già "in caricamento" dal primo render: niente benvenuto
+          <ChatView key={currentId ?? "new"} thread={currentId ? (threads[currentId] ?? LOADING_THREAD) : null} title={title}
             busy={currentId ? busyIds.has(currentId) : false} onSend={send}
             onStop={() => controllers.current.get(currentId)?.abort()} onOpenDoc={openDoc} />
         )}

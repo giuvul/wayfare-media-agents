@@ -17,6 +17,8 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 - Messaggio di errore specifico quando OpenRouter non ha provider disponibili per il modello scelto.
 
 ### Corretto
+- Aprendo una conversazione salvata compariva per un attimo la schermata di benvenuto: ora c'è un segnaposto
+  di caricamento.
 - La schermata iniziale si apriva già scorsa in fondo, con il banner tagliato.
 - Il pannello del documento restava aperto passando alla Knowledge Base o alle Impostazioni.
 
