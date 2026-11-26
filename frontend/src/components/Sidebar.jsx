@@ -55,7 +55,7 @@ export default function Sidebar({ route, history, busyIds, health, onDelete, ope
   return (
     <>
       {open && <div className="sidebar-scrim" onClick={onClose} aria-hidden="true" />}
-      <nav className={`sidebar${open ? " is-open" : ""}`} aria-label="Navigazione">
+      <nav id="sidebar" className={`sidebar${open ? " is-open" : ""}`} aria-label="Navigazione">
         <div className="brand">
           <a className="brand-lockup" href="#/" onClick={onClose}>
             <BrandMark />

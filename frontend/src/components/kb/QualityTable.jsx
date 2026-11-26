@@ -62,8 +62,13 @@ export default function QualityTable({ quality }) {
               const isOpen = open === c.id;
               return (
                 <Fragment key={c.id}>
-                  <tr className="clickable" onClick={() => setOpen(isOpen ? null : c.id)} aria-expanded={isOpen}>
-                    <td className="chev-cell"><IconChevron size={13} className={isOpen ? "rot" : ""} /></td>
+                  <tr className="clickable" onClick={() => setOpen(isOpen ? null : c.id)}>
+                    <td className="chev-cell">
+                      <button type="button" className="chev-btn" aria-expanded={isOpen} aria-label={`Dettagli: ${c.controllo}`}
+                        onClick={(e) => { e.stopPropagation(); setOpen(isOpen ? null : c.id); }}>
+                        <IconChevron size={13} className={isOpen ? "rot" : ""} />
+                      </button>
+                    </td>
                     <td className="wrap">{c.controllo}</td>
                     <td><code>{c.colonna ?? "—"}</code></td>
                     <td className="num">{formatCell(c.righe)}</td>

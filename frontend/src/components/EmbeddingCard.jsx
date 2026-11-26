@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../api.js";
 import { formatContext, formatDuration, formatPrice } from "../format.js";
+import { useCatalogSearch, usePolling } from "../hooks.js";
 import { IconAlert, IconCheck, IconSearch } from "./Icons.jsx";
+import ModelRow from "./ModelRow.jsx";
 
 const VERDICT = {
   ok: { label: "Adatto a questa macchina", cls: "badge-ok" },
@@ -57,13 +59,7 @@ function Job({ job }) {
 
 function RemoteList({ current, busy, onPick }) {
   const [q, setQ] = useState("");
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  useEffect(() => {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => api.embeddingModels(q.trim(), ctrl.signal).then(setResult).catch((e) => e.name !== "AbortError" && setError(e.message)), 250);
-    return () => { clearTimeout(t); ctrl.abort(); };
-  }, [q]);
+  const { result, error } = useCatalogSearch(api.embeddingModels, q);
   return (
     <>
       <label className="search">
@@ -73,19 +69,13 @@ function RemoteList({ current, busy, onPick }) {
       <p className="muted small">Catalogo di OpenRouter{result ? ` (${result.total} modelli)` : ""}. Prezzo in dollari per milione di token in input.</p>
       {error && <p className="notice notice-error">{error}</p>}
       <ul className="model-list">
-        {result?.models.map((m) => {
-          const inUse = current.provider === "openrouter" && current.model === m.id;
-          return (
-            <li key={m.id} className={inUse ? "is-current" : ""}>
-              <div className="model-info"><strong>{m.name}</strong><code>{m.id}</code></div>
-              <span className="model-meta">{formatPrice(m.promptPrice)}</span>
-              <span className="model-meta">{formatContext(m.contextLength)} contesto</span>
-              {inUse ? <span className="badge badge-ok">In uso</span> : (
-                <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onPick("openrouter", m.id)}>Usa</button>
-              )}
-            </li>
-          );
-        })}
+        {result?.models.map((m) => (
+          <ModelRow key={m.id} name={m.name} id={m.id} disabled={busy}
+            inUse={current.provider === "openrouter" && current.model === m.id}
+            meta={[formatPrice(m.promptPrice), `${formatContext(m.contextLength)} contesto`]}
+            onUse={() => onPick("openrouter", m.id)} />
+        ))}
+        {result?.models.length === 0 && <li className="muted">Nessun modello trovato.</li>}
       </ul>
     </>
   );
@@ -130,27 +120,14 @@ function LocalList({ current, busy, onPick, refreshKey }) {
   );
 }
 
-export default function EmbeddingCard() {
-  const [info, setInfo] = useState(null);
-  const [tab, setTab] = useState(null);
-  const [error, setError] = useState(null);
-  const timer = useRef(null);
+const isRunning = (r) => r.job.status === "running";
 
-  const load = useCallback(async () => {
-    clearTimeout(timer.current);
-    try {
-      const r = await api.embeddings();
-      setInfo(r);
-      setTab((t) => t ?? r.current.provider);
-      if (r.job.status === "running") timer.current = setTimeout(load, 1000);
-    } catch (e) {
-      setError(e.message);
-    }
-  }, []);
-  useEffect(() => {
-    load();
-    return () => clearTimeout(timer.current);
-  }, [load]);
+export default function EmbeddingCard() {
+  const { data: info, error: loadError, reload } = usePolling(api.embeddings, isRunning, 1000);
+  const [chosenTab, setTab] = useState(null);
+  const [actionError, setError] = useState(null);
+  const tab = chosenTab ?? info?.current.provider ?? null; // finché non si sceglie, la scheda del modello in uso
+  const error = actionError ?? loadError;
 
   const pick = async (provider, model) => {
     const label = provider === "local" ? "Il modello viene scaricato (se serve) ed eseguito su questo server." : "I testi verranno inviati a OpenRouter per calcolare i vettori.";
@@ -158,7 +135,7 @@ export default function EmbeddingCard() {
     try {
       setError(null);
       await api.switchEmbedding(provider, model);
-      load();
+      reload();
     } catch (e) {
       setError(e.message);
     }
@@ -191,8 +168,8 @@ export default function EmbeddingCard() {
       <Job job={job} />
       {error && <p className="notice notice-error">{error}</p>}
       <div className="segmented align-start">
-        <button type="button" className={tab === "openrouter" ? "is-on" : ""} onClick={() => setTab("openrouter")}>OpenRouter (cloud)</button>
-        <button type="button" className={tab === "local" ? "is-on" : ""} onClick={() => setTab("local")}>Locale (su questo server)</button>
+        <button type="button" className={tab === "openrouter" ? "is-on" : ""} aria-pressed={tab === "openrouter"} onClick={() => setTab("openrouter")}>OpenRouter (cloud)</button>
+        <button type="button" className={tab === "local" ? "is-on" : ""} aria-pressed={tab === "local"} onClick={() => setTab("local")}>Locale (su questo server)</button>
       </div>
       {tab === "openrouter" && <RemoteList current={current} busy={busy} onPick={pick} />}
       {tab === "local" && (

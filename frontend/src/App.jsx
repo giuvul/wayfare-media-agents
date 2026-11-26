@@ -19,6 +19,21 @@ export default function App() {
   const [health, setHealth] = useState(null);
   const [docTarget, setDocTarget] = useState(null); // { source, section } del documento aperto nel pannello
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef(null);
+  // menu su mobile: Esc lo chiude; il focus entra nel menu all'apertura e torna al pulsante alla chiusura
+  const menuWasOpen = useRef(false);
+  useEffect(() => {
+    if (menuOpen) {
+      document.querySelector("#sidebar a, #sidebar button")?.focus();
+      const onKey = (e) => e.key === "Escape" && setMenuOpen(false);
+      window.addEventListener("keydown", onKey);
+      menuWasOpen.current = true;
+      return () => window.removeEventListener("keydown", onKey);
+    }
+    if (menuWasOpen.current) menuButton.current?.focus();
+    menuWasOpen.current = false;
+    return undefined;
+  }, [menuOpen]);
   const controllers = useRef(new Map());
 
   const refreshHistory = useCallback(() => api.conversations().then((r) => setHistory(r.conversations)).catch(() => setHistory([])), []);
@@ -38,8 +53,9 @@ export default function App() {
     setThreads((t) => ({ ...t, [currentId]: { messages: [], loading: true } }));
     api
       .conversation(currentId)
-      .then((c) => setThreads((t) => ({ ...t, [currentId]: { messages: c.messages } })))
-      .catch((err) => setThreads((t) => ({ ...t, [currentId]: { messages: [], error: err.message } })));
+      // se nel frattempo la conversazione ha messaggi locali (o è stata eliminata), la risposta è superata
+      .then((c) => setThreads((t) => (t[currentId]?.loading ? { ...t, [currentId]: { messages: c.messages } } : t)))
+      .catch((err) => setThreads((t) => (t[currentId]?.loading ? { ...t, [currentId]: { messages: [], error: err.message } } : t)));
   }, [currentId, threads]);
 
   const update = useCallback((id, fn) => {
@@ -130,18 +146,20 @@ export default function App() {
     [currentId, refreshHistory],
   );
 
-  const openDoc = useCallback((source, section) => setDocTarget({ source, section }), []);
-  // il pannello del documento appartiene alla conversazione: si chiude cambiando pagina o conversazione
+  // il pannello del documento appartiene alla pagina da cui è stato aperto: cambiando pagina non si vede più
   const routeKey = `${route.view}/${route.id ?? route.tab ?? ""}`;
-  useEffect(() => setDocTarget(null), [routeKey]);
+  const openDoc = useCallback((source, section) => setDocTarget({ source, section, routeKey }), [routeKey]);
+  const drawer = docTarget?.routeKey === routeKey ? docTarget : null;
   const title = currentId ? history?.find((c) => c.id === currentId)?.title : null;
 
   return (
-    <div className="app">
+    <>
+    <div className="app" inert={drawer ? true : undefined}>
       <Sidebar route={route} history={history} busyIds={busyIds} health={health} onDelete={remove}
         open={menuOpen} onClose={() => setMenuOpen(false)} />
       <div className="main">
-        <button type="button" className="icon-btn menu-btn" onClick={() => setMenuOpen(true)} aria-label="Apri il menu">
+        <button type="button" className="icon-btn menu-btn" onClick={() => setMenuOpen(true)} aria-label="Apri il menu"
+          aria-expanded={menuOpen} aria-controls="sidebar" ref={menuButton}>
           <IconMenu />
         </button>
         {route.view === "chat" && (
@@ -153,7 +171,8 @@ export default function App() {
         {route.view === "kb" && <KnowledgeBase route={route} onChanged={refreshHealth} />}
         {route.view === "settings" && <Settings onChanged={refreshHealth} />}
       </div>
-      {docTarget && <DocDrawer target={docTarget} onClose={() => setDocTarget(null)} />}
     </div>
+    {drawer && <DocDrawer target={drawer} onClose={() => setDocTarget(null)} />}
+    </>
   );
 }

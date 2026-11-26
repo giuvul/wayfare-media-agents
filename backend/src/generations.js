@@ -11,7 +11,9 @@ export const sameModel = (served, requested) => served === requested || served.s
 
 export function createGenerationService({ config, settings, fetchImpl = fetch }) {
   const cache = new Map(); // id -> dettagli: una generazione conclusa non cambia più
+  const misses = new Map(); // id -> momento dell'ultimo 404
   const MAX_CACHE = 2000;
+  const MISS_TTL_MS = 3_000; // il frontend riprova ogni 4 s
 
   async function fetchOne(id, apiKey) {
     const url = new URL(`${config.OPENROUTER_BASE_URL}/generation`);
@@ -30,11 +32,16 @@ export function createGenerationService({ config, settings, fetchImpl = fetch })
       const out = {};
       await Promise.all(
         ids.map(async (id) => {
-          if (!cache.has(id)) {
+          const miss = misses.get(id);
+          if (!cache.has(id) && !(miss !== undefined && Date.now() - miss < MISS_TTL_MS)) {
             const info = await fetchOne(id, apiKey).catch(() => null);
             if (info) {
               if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value);
               cache.set(id, info);
+              misses.delete(id);
+            } else {
+              if (misses.size >= MAX_CACHE) misses.delete(misses.keys().next().value);
+              misses.set(id, Date.now()); // non ancora disponibile: non si richiede di nuovo per qualche secondo
             }
           }
           out[id] = cache.get(id) ?? null;

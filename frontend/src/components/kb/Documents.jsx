@@ -45,8 +45,8 @@ function NewDocument({ onCreated, onCancel }) {
 
 export default function Documents({ selected, onChanged }) {
   const [docs, setDocs] = useState(null);
-  const [doc, setDoc] = useState(null);
-  const [mode, setMode] = useState("view"); // view | edit | new
+  const [loaded, setLoaded] = useState({ id: null, doc: null });
+  const [modeFor, setModeFor] = useState({ id: null, mode: "view" }); // view | edit | new
   const [raw, setRaw] = useState(null);
   const [state, setState] = useState({});
 
@@ -56,17 +56,31 @@ export default function Documents({ selected, onChanged }) {
   }, [loadList]);
 
   const current = selected ?? docs?.[0]?.id ?? null;
+  // documento e modalità valgono per il documento selezionato: cambiandolo si torna alla lettura
+  const doc = loaded.id === current ? loaded.doc : null;
+  const mode = modeFor.mode === "new" || modeFor.id === current ? modeFor.mode : "view";
+  const setMode = (m) => setModeFor({ id: current, mode: m });
+  const setDoc = (d) => setLoaded({ id: current, doc: d });
   useEffect(() => {
-    if (!current) return;
-    setDoc(null);
-    setMode("view");
-    api.document(current).then(setDoc).catch((err) => setState({ error: err.message }));
+    if (!current) return undefined;
+    let alive = true; // una risposta arrivata dopo aver cambiato documento viene ignorata
+    api.document(current).then(
+      (d) => alive && setLoaded({ id: current, doc: d }),
+      (err) => alive && setState({ error: err.message }),
+    );
+    return () => {
+      alive = false;
+    };
   }, [current]);
 
   const startEdit = async () => {
     setState({});
-    setRaw((await api.documentRaw(current)).content);
-    setMode("edit");
+    try {
+      setRaw((await api.documentRaw(current)).content);
+      setMode("edit");
+    } catch (err) {
+      setState({ error: err.message });
+    }
   };
 
   const save = async (content) => {
@@ -106,7 +120,8 @@ export default function Documents({ selected, onChanged }) {
         <ul className="doc-list">
           {docs?.map((d) => (
             <li key={d.id}>
-              <a href={`#/kb/documenti/${encodeURIComponent(d.id)}`} className={d.id === current && mode !== "new" ? "is-active" : ""}>
+              <a href={`#/kb/documenti/${encodeURIComponent(d.id)}`} className={d.id === current && mode !== "new" ? "is-active" : ""}
+                aria-current={d.id === current && mode !== "new" ? "page" : undefined} onClick={() => { setState({}); setModeFor({ id: null, mode: "view" }); }}>
                 <IconDoc size={16} />
                 <span>
                   <strong>{d.title}</strong>
@@ -128,8 +143,8 @@ export default function Documents({ selected, onChanged }) {
             setState({ ok: `Documento creato e indicizzato: ${r.indexed.chunks} passaggi.` });
             await loadList();
             onChanged();
+            setModeFor({ id: null, mode: "view" });
             navigate(`/kb/documenti/${encodeURIComponent(r.id)}`);
-            setMode("view");
           }} />
         )}
         {mode === "edit" && raw !== null && (

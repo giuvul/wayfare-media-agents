@@ -6,6 +6,65 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 
 ## [Non rilasciato]
 
+Revisione completa del sistema (front end, back end, data agent, configurazione), con revisori indipendenti.
+
+### Sicurezza
+- Sandbox del data agent: il figlio risponde in JSON e il server non deserializza più oggetti arbitrari; i pickle
+  di dataset e cache passano da un unpickler ristretto (`app/safe_pickle.py`). Limiti di CPU, memoria (3 GB) e
+  dimensione dei file; output e grafici limitati. Policy estesa a `from ... import`, nomi speciali, memoria
+  mappata, estensioni C, `to_string` su file e stringhe con URL o percorsi di sistema.
+- Chiave OpenRouter e token interno tolti dall'ambiente del data agent all'avvio: i processi della sandbox non li
+  ereditano più (prima erano leggibili da `/proc/self/environ`).
+- `DATA_AGENT_TOKEN` obbligatorio di almeno 16 caratteri anche nel data agent; `.env.example` non ha più un
+  valore segnaposto utilizzabile.
+- Errori 4xx con soli messaggi scritti per l'utente (`HttpError`); niente dettagli interni delle librerie.
+- Cartella `storage/` e file WAL di SQLite con permessi riservati al proprietario.
+- Intestazioni di sicurezza (CSP, `nosniff`, `Referrer-Policy`) anche sulle pagine statiche servite da nginx;
+  Chroma senza capability e con `no-new-privileges`.
+
+### Corretto
+- Dopo uno Stop o un timeout durante uno strumento, il messaggio successivo nella stessa conversazione poteva
+  fallire: la chiamata rimasta senza risultato viene chiusa prima della nuova domanda.
+- Una conversazione poteva restare bloccata ("risposta in corso") se il salvataggio di un messaggio falliva.
+- Salvando chiave e modello insieme, una chiave valida veniva salvata anche se il modello era rifiutato.
+- Doppio clic su "Usa" nel cambio del modello di embedding: potevano partire due cambi.
+- Analisi dei dati: il budget ora include il margine con cui la richiesta attende la conclusione, e una singola
+  esecuzione non supera mai il tempo rimasto; il client HTTP non ritenta più per conto proprio.
+- Documentazione non raggiungibile: lo strumento restituisce un errore gestito invece di far fallire il turno.
+- Un turno senza testo finale mostra un messaggio invece di una risposta vuota.
+- All'arresto del server i turni in corso terminano subito, salvati con un messaggio che invita a riprovare.
+- L'indicizzazione da riga di comando usa anche la chiave impostata dall'interfaccia.
+- Il pannello del documento restava aperto passando alla Knowledge Base o alle Impostazioni.
+- Il data agent legge CSV e dizionario una sola volta per impronta e pulizia; due ricostruzioni contemporanee non
+  partono più entrambe.
+
+### Modificato
+- Lint in tutti i componenti: ESLint (con le regole degli hook di React) per back end e front end, Ruff per il
+  data agent; strumenti di test e lint del data agent in `requirements-dev.txt`, fuori dall'immagine.
+- Front end: hook condivisi (`usePolling`, `useDebouncedValue`, `useCatalogSearch`) e componente `ModelRow` al
+  posto di logica duplicata; stato derivato invece di effetti che reimpostano lo stato.
+- Back end: rimosso `asyncRoute` (Express 5 inoltra già gli errori delle route asincrone); parametri di
+  `/api/kb/data` validati con zod; richieste di generazioni non ancora disponibili non ripetute per qualche secondo.
+- Accessibilità: schede della Knowledge Base come link con `aria-current`, celle modificabili da tastiera,
+  pulsanti con `aria-pressed`/`aria-expanded`, focus gestito in pannello del documento e menu mobile, animazioni
+  ridotte rispettate.
+- Valutazione: id inesistenti in `--only` e `--rescore` segnalati; rimosso un controllo inutilizzato.
+- Node 24 richiesto anche in `engines`; nuove variabili del server di sviluppo in `.env.example`.
+
+## [3f4d1d6] - 2026-11-26 - Includi `backend/src/storage/db.js`
+
+### Corretto
+- La regola `storage/` di `.gitignore` escludeva anche `backend/src/storage/db.js`: ora le cartelle di dati sono
+  ancorate alla radice (`/storage/`, `/chroma_data/`) e il file è nel repository.
+
+## [c034b4d] - 2026-11-26 - Segnaposto di caricamento per le conversazioni salvate
+
+### Corretto
+- Aprendo una conversazione salvata compariva per un attimo la schermata di benvenuto: ora c'è un segnaposto
+  di caricamento.
+
+## [c0a3e01] - 2026-11-26 - Banner del brand, scrollbar, responsive e messaggio per modello non disponibile
+
 ### Modificato
 - Schermata iniziale con il banner del brand (`docs/brand/Banner-Hero*.png`, variante per il tema scuro), in
   WebP a due risoluzioni; domande suggerite allineate tra le colonne anche quando un testo va a capo.
@@ -17,10 +76,7 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
 - Messaggio di errore specifico quando OpenRouter non ha provider disponibili per il modello scelto.
 
 ### Corretto
-- Aprendo una conversazione salvata compariva per un attimo la schermata di benvenuto: ora c'è un segnaposto
-  di caricamento.
 - La schermata iniziale si apriva già scorsa in fondo, con il banner tagliato.
-- Il pannello del documento restava aperto passando alla Knowledge Base o alle Impostazioni.
 
 ## [e22efaa] - 2026-11-26 - Identità visiva: design system "Modernismo italiano"
 
@@ -207,7 +263,10 @@ Tutte le modifiche rilevanti al progetto, dalla più recente. Il formato segue
   make-good, metodologia, policy sui contenuti, privacy, segmenti, FAQ) in Markdown e PDF.
 - Configurazione del repository: `.gitignore` (segreti e dati di runtime esclusi), versioni di Node e Python.
 
-[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/e22efaa...HEAD
+[Non rilasciato]: https://github.com/giuvul/wayfare-media-agents/compare/3f4d1d6...HEAD
+[3f4d1d6]: https://github.com/giuvul/wayfare-media-agents/commit/3f4d1d6
+[c034b4d]: https://github.com/giuvul/wayfare-media-agents/commit/c034b4d
+[c0a3e01]: https://github.com/giuvul/wayfare-media-agents/commit/c0a3e01
 [e22efaa]: https://github.com/giuvul/wayfare-media-agents/commit/e22efaa
 [56911b7]: https://github.com/giuvul/wayfare-media-agents/commit/56911b7
 [b36242f]: https://github.com/giuvul/wayfare-media-agents/commit/b36242f

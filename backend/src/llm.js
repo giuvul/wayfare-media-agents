@@ -25,7 +25,7 @@ export function createChatModel(config, { model = config.LLM_MODEL, apiKey = con
     configuration: { baseURL: config.OPENROUTER_BASE_URL, defaultHeaders: HEADERS },
     ...(temperature === undefined ? {} : { temperature }),
     timeout: config.LLM_TIMEOUT_MS,
-    maxRetries: 1,
+    maxRetries: 0, // i tentativi li gestisce modelRetryMiddleware dell'agente: un solo livello, tempi prevedibili
     modelKwargs,
   });
 }

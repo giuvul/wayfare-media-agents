@@ -21,11 +21,18 @@ export function formatPassages(hits) {
 export function createKnowledgeBaseTool(retriever) {
   return tool(
     async ({ query }) => {
-      const hits = await retriever.search(query);
+      let hits;
+      try {
+        hits = await retriever.search(query);
+      } catch {
+        // ChromaDB o il servizio di embedding non raggiungibili: il modello lo dice invece di inventare
+        const error = "la ricerca nella documentazione non è disponibile";
+        return [`ERRORE: ${error}. Spiega all'utente che al momento non puoi consultare la documentazione.`, { query, ok: false, error, sources: [] }];
+      }
       const sources = hits.map(({ source, docTitle, section, sectionTitle, page, similarity, text }) => ({
         source, docTitle, section, sectionTitle, page, similarity, excerpt: text.split("\n").slice(1).join(" ").slice(0, 400),
       }));
-      return [formatPassages(hits), { query, sources }];
+      return [formatPassages(hits), { query, ok: true, sources }];
     },
     {
       name: KB_TOOL_NAME,

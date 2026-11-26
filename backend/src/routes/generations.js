@@ -3,7 +3,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 
-import { asyncRoute } from "../errors.js";
 import { GENERATION_ID } from "../generations.js";
 
 export function generationsRouter({ generations }) {
@@ -13,13 +12,13 @@ export function generationsRouter({ generations }) {
   router.get(
     "/generations",
     limiter,
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const ids = [...new Set(String(req.query.ids ?? "").split(",").filter(Boolean))];
       if (ids.length === 0 || ids.length > 30 || !ids.every((id) => GENERATION_ID.test(id))) {
         return res.status(400).json({ error: "Id di generazione non validi." });
       }
       res.json({ generations: await generations.lookup(ids) });
-    }),
+    },
   );
 
   return router;

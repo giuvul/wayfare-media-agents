@@ -1,3 +1,4 @@
+import { citedSources } from "../citations.js";
 import AnalysisCard from "./AnalysisCard.jsx";
 import { BrandMark } from "./Brand.jsx";
 import Markdown from "./Markdown.jsx";
@@ -15,14 +16,9 @@ export default function Message({ message, onOpenDoc }) {
   }
 
   const live = message.status === "streaming";
-  const retrieved = message.steps.flatMap((s) => (s.tool === "cerca_documentazione" ? s.artifact?.sources ?? [] : []));
   // le citazioni rimandano al documento da cui è stata recuperata quella sezione
-  const bySection = new Map();
-  for (const s of [...retrieved].sort((a, b) => a.similarity - b.similarity)) bySection.set(s.section, s.source);
-  const openCitation = (section) => onOpenDoc(bySection.get(section) ?? retrieved[0]?.source ?? null, section);
-  // fonti mostrate: le sezioni citate nella risposta; se il modello non ha citato, tutte quelle recuperate
-  const cited = new Set([...message.text.matchAll(/§\s?(\d+(?:\.\d+)*)/g)].map((m) => m[1]));
-  const sources = cited.size ? retrieved.filter((s) => cited.has(s.section)) : retrieved;
+  const { sources, sourceOf } = citedSources(message.text, message.steps);
+  const openCitation = (section) => onOpenDoc(sourceOf(section), section);
   const analyses = message.steps.filter(
     (s) => s.tool === "analizza_dati" && !s.running && (s.artifact?.charts?.length || s.artifact?.table?.rows?.length),
   );
@@ -37,7 +33,7 @@ export default function Message({ message, onOpenDoc }) {
         {/* grafici, dati e fonti compaiono a risposta completa: niente salti del layout durante lo streaming */}
         {!live && analyses.map((step) => <AnalysisCard key={step.id} artifact={step.artifact} />)}
         {!live && sources.length > 0 && <Sources sources={sources} onOpenDoc={onOpenDoc} />}
-        {!live && <ModelInfo generations={message.generations} requested={message.requestedModel} />}
+        {!live && <ModelInfo generations={message.generations} requested={message.requestedModel} retry={Boolean(message.startedAt)} />}
       </div>
     </div>
   );

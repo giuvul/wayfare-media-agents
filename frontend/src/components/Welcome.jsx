@@ -53,7 +53,7 @@ export default function Welcome({ onPick }) {
   return (
     <section className="welcome">
       <Hero />
-      <h1>Come posso aiutarti?</h1>
+      <h2 className="welcome-title">Come posso aiutarti?</h2>
       <p className="welcome-lead">
         Rispondo sulle regole commerciali e operative di Wayfare Media e analizzo i dati delle campagne
         (gennaio 2025 – settembre 2026) negli otto aeroporti della rete.

@@ -11,8 +11,8 @@ export default function MarkdownEditor({ initial, onSave, onCancel, saving, save
     <div className="editor">
       <div className="editor-toolbar">
         <div className="segmented">
-          <button type="button" className={pane === "edit" ? "is-on" : ""} onClick={() => setPane("edit")}>Modifica</button>
-          <button type="button" className={pane === "preview" ? "is-on" : ""} onClick={() => setPane("preview")}>Anteprima</button>
+          <button type="button" className={pane === "edit" ? "is-on" : ""} aria-pressed={pane === "edit"} onClick={() => setPane("edit")}>Modifica</button>
+          <button type="button" className={pane === "preview" ? "is-on" : ""} aria-pressed={pane === "preview"} onClick={() => setPane("preview")}>Anteprima</button>
         </div>
         <span className="muted small">{dirty ? "Modifiche non salvate" : "Nessuna modifica"}</span>
         <div className="spacer" />

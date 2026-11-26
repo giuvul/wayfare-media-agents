@@ -2,7 +2,6 @@
 import express from "express";
 import { z } from "zod";
 
-import { asyncRoute } from "../errors.js";
 
 const Id = z.uuid();
 
@@ -20,7 +19,7 @@ export function conversationsRouter({ conversations, checkpointer, dataAgent, ac
 
   router.delete(
     "/conversations/:id",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const { id } = req.params;
       if (!Id.safeParse(id).success) return res.status(400).json({ error: "Identificativo non valido." });
       if (activeSessions.has(id)) return res.status(409).json({ error: "Attendi la fine della risposta in corso." });
@@ -36,7 +35,7 @@ export function conversationsRouter({ conversations, checkpointer, dataAgent, ac
         if (failed) log.warn({ conversation: id, failed }, "alcuni grafici non sono stati eliminati");
       });
       res.status(204).end();
-    }),
+    },
   );
 
   return router;

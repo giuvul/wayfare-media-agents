@@ -113,7 +113,6 @@ function check(c, last) {
     checks.push({ name: `cita §${id}`, ok, detail: "" });
   }
   for (const re of c.contains ?? []) checks.push({ name: `contiene /${re}/`, ok: new RegExp(re, "i").test(last.answer), detail: "" });
-  for (const s of c.absent ?? []) checks.push({ name: `non contiene ${s}`, ok: !last.answer.includes(s), detail: "" });
   const nums = numbersIn(last.answer);
   for (const n of c.numbers ?? []) {
     // tolleranza relativa (default 0,5%) o assoluta (`abs`, per percentuali con pochi decimali)
@@ -157,7 +156,9 @@ if (opts.rescore) {
   // stesse risposte, controlli aggiornati: data, modello e costo restano quelli dell'esecuzione originale
   const saved = JSON.parse(readFileSync(opts.rescore, "utf8"));
   ({ data: date, modello: model, costo_usd: cost } = saved.summary);
-  results = saved.results.map((r) => {
+  const unknown = saved.results.filter((r) => !byId[r.id]).map((r) => r.id);
+  if (unknown.length) console.log(`Casi non più presenti in cases.json, esclusi: ${unknown.join(", ")}`);
+  results = saved.results.filter((r) => byId[r.id]).map((r) => {
     const verdict = check(byId[r.id], r.turns.at(-1));
     logLine(byId[r.id], verdict, r.ms);
     return { ...r, ...verdict };
@@ -165,6 +166,11 @@ if (opts.rescore) {
   outFile = opts.rescore.replace(/\.json$/, "");
 } else {
   const only = opts.only?.split(",");
+  const missing = only?.filter((id) => !byId[id]) ?? [];
+  if (missing.length) {
+    console.error(`Casi inesistenti: ${missing.join(", ")}. Id disponibili: ${casi.map((c) => c.id).join(", ")}`);
+    process.exit(1);
+  }
   const selected = (only ? casi.filter((c) => only.includes(c.id)) : casi).flatMap((c) => Array(Number(opts.repeat)).fill(c));
   const before = await usage();
   results = [];

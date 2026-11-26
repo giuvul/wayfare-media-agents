@@ -12,7 +12,7 @@ const ChatRequest = z.object({
   sessionId: z.uuid("sessionId deve essere un UUID."),
 });
 
-export function chatRouter({ config, getAgent, checkpointer, conversations, activeSessions, settings }) {
+export function chatRouter({ config, getAgent, checkpointer, conversations, activeSessions, settings, shutdownSignal }) {
   const router = express.Router();
   router.use(express.json({ limit: "16kb" }));
   const limiter = rateLimit({
@@ -34,14 +34,13 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
 
     const clientGone = new AbortController();
     res.on("close", () => !res.writableFinished && clientGone.abort());
-    const signal = AbortSignal.any([clientGone.signal, AbortSignal.timeout(config.CHAT_TIMEOUT_MS)]);
+    const signals = [clientGone.signal, AbortSignal.timeout(config.CHAT_TIMEOUT_MS)];
+    const signal = AbortSignal.any(shutdownSignal ? [...signals, shutdownSignal] : signals);
     const wantsStream = req.accepts(["application/json", "text/event-stream"]) === "text/event-stream";
 
-    const conversation = conversations.ensure(sessionId, message);
-    conversations.addMessage(sessionId, { id: randomUUID(), role: "user", text: message });
     const started = Date.now();
     // modello scelto al momento del turno: l'interfaccia lo confronta con quello che ha risposto davvero
-    const requestedModel = settings?.get().model ?? config.LLM_MODEL;
+    const requestedModel = settings.get().model;
     const assistant = { id: randomUUID(), role: "assistant", text: "", steps: [], status: "done", requestedModel };
     // gli step arrivati prima di un errore restano visibili anche nella cronologia
     const partial = new Map();
@@ -51,6 +50,14 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
 
     let send = () => {};
     let heartbeat = null;
+    let conversation = null;
+    try {
+      conversation = conversations.ensure(sessionId, message);
+      conversations.addMessage(sessionId, { id: randomUUID(), role: "user", text: message });
+    } catch (err) {
+      activeSessions.delete(sessionId); // senza salvataggio il turno non parte, e la conversazione non resta bloccata
+      throw err;
+    }
     if (wantsStream) {
       res.writeHead(200, {
         "Content-Type": "text/event-stream; charset=utf-8",
@@ -79,18 +86,24 @@ export function chatRouter({ config, getAgent, checkpointer, conversations, acti
       Object.assign(assistant, { text: result.answer, steps: result.steps, generations: result.generations });
     } catch (err) {
       const stopped = clientGone.signal.aborted;
+      const restarting = shutdownSignal?.aborted;
       Object.assign(assistant, {
         steps: [...partial.values()],
         status: stopped ? "stopped" : "error",
-        error: stopped ? "Risposta interrotta." : userFacingError(err),
+        error: stopped ? "Risposta interrotta." : restarting ? "Il server si sta riavviando: invia di nuovo il messaggio tra poco." : userFacingError(err),
       });
       if (!stopped) req.log.error({ err }, "turno di chat fallito");
       send("error", { message: assistant.error });
     } finally {
-      assistant.durationMs = Date.now() - started;
-      conversations.addMessage(sessionId, assistant);
+      // prima si libera la conversazione: un errore nel salvataggio non deve lasciarla bloccata
       activeSessions.delete(sessionId);
       clearInterval(heartbeat);
+      assistant.durationMs = Date.now() - started;
+      try {
+        conversations.addMessage(sessionId, assistant);
+      } catch (err) {
+        req.log.error({ err }, "risposta non salvata nella cronologia");
+      }
     }
 
     if (wantsStream) return res.end();

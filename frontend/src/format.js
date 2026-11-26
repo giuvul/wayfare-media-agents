@@ -14,8 +14,8 @@ export function formatDuration(ms) {
 }
 
 export const TOOL_LABELS = {
-  cerca_documentazione: { label: "Documentazione aziendale", running: "Consulto l'handbook aziendale…", icon: "doc" },
-  analizza_dati: { label: "Analisi dei dati", running: "L'analista dati sta lavorando: pulizia, calcoli e grafici…", icon: "chart" },
+  cerca_documentazione: { label: "Documentazione aziendale", running: "Consulto l'handbook aziendale…" },
+  analizza_dati: { label: "Analisi dei dati", running: "L'analista dati sta lavorando: pulizia, calcoli e grafici…" },
 };
 
 export function formatDate(iso) {

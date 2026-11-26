@@ -86,6 +86,24 @@ export function createAgentProvider({ settings, buildModel, tools, maxModelCalls
   };
 }
 
+/** Risposta quando il turno termina senza testo (es. limite di chiamate al modello raggiunto durante gli strumenti). */
+export const EMPTY_ANSWER =
+  "Non sono riuscito a completare la risposta entro i limiti previsti. Prova a riformulare la domanda o a dividerla in parti.";
+
+/**
+ * Chiamate a strumenti rimaste senza risultato nella memoria della conversazione: succede se un turno viene
+ * interrotto (Stop, timeout) mentre uno strumento lavora. I provider rifiutano una cronologia così, quindi il
+ * turno successivo le chiude con un risultato d'errore prima della nuova domanda.
+ */
+export function unansweredToolCalls(messages) {
+  const answered = new Set(messages.filter((m) => ToolMessage.isInstance(m)).map((m) => m.tool_call_id));
+  return messages
+    .filter((m) => AIMessage.isInstance(m))
+    .flatMap((m) => m.tool_calls ?? [])
+    .filter((call) => !answered.has(call.id))
+    .map((call) => new ToolMessage({ tool_call_id: call.id, name: call.name, content: "ERRORE: operazione interrotta dall'utente o per timeout." }));
+}
+
 const textOf = (msg) =>
   (typeof msg.content === "string" ? msg.content : msg.content.map((p) => p.text ?? "").join("")).trim();
 
@@ -110,7 +128,9 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
   // Gli aggiornamenti dei middleware possono riproporre l'intera cronologia: si considerano solo i messaggi
   // nuovi di questo turno, ciascuno una volta sola.
   const previous = await checkpointer?.getTuple({ configurable: { thread_id: sessionId } });
-  const seen = new Set((previous?.checkpoint?.channel_values?.messages ?? []).map((m) => m.id).filter(Boolean));
+  const history = previous?.checkpoint?.channel_values?.messages ?? [];
+  const seen = new Set(history.map((m) => m.id).filter(Boolean));
+  const repairs = unansweredToolCalls(history);
 
   // testo della chiamata al modello in corso: trattenuto finché non è chiaro se è risposta o ragionamento
   let pending = { text: "", released: false, toolCall: false };
@@ -119,7 +139,7 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
   };
 
   const stream = await agent.stream(
-    { messages: [{ role: "user", content: message }] },
+    { messages: [...repairs, { role: "user", content: message }] },
     // deadline (ms epoch): scadenza del turno, letta dagli strumenti per non avviare lavoro che non finirebbe in tempo
     { configurable: { thread_id: sessionId, deadline }, streamMode: ["updates", "messages"], signal },
   );
@@ -168,7 +188,7 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
         } else if (ToolMessage.isInstance(msg)) {
           const step = steps.find((s) => s.id === msg.tool_call_id) ?? { id: msg.tool_call_id, tool: msg.name };
           Object.assign(step, {
-            ok: !String(msg.content).startsWith("ERRORE"),
+            ok: msg.artifact?.ok ?? !String(msg.content).startsWith("ERRORE"),
             durationMs: Date.now() - (started.get(msg.tool_call_id) ?? Date.now()),
             artifact: msg.artifact ?? null,
           });
@@ -183,7 +203,7 @@ export async function runTurn({ agent, checkpointer, sessionId, message, signal,
     orchestratore: orchestratorGenerations,
     analista: steps.flatMap((s) => s.artifact?.generations ?? []),
   };
-  const result = { answer: answer.trim(), steps, generations };
+  const result = { answer: answer.trim() || EMPTY_ANSWER, steps, generations };
   onEvent("final", result);
   return result;
 }

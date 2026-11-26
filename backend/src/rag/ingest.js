@@ -102,18 +102,20 @@ export function createIndexer({ config, embeddings, documents, log }) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.main) {
   const config = loadConfig();
   const log = createLogger(config.LOG_LEVEL);
-  // rispetta il modello scelto dall'interfaccia, se c'è
+  // rispetta modello di embedding e chiave scelti dall'interfaccia, se ci sono
   const db = openDatabase(config.STORAGE_DIR);
-  const embeddings = createEmbeddingService({ config, store: createSettingsStore(db), getApiKey: () => config.OPENROUTER_API_KEY, log });
+  const store = createSettingsStore(db);
+  const getApiKey = () => store.get("openrouter_api_key") ?? config.OPENROUTER_API_KEY;
+  const embeddings = createEmbeddingService({ config, store, getApiKey, log });
   const indexer = createIndexer({ config, log, embeddings, documents: createDocumentStore(config.KB_DIR) });
   indexer
     .indexAll({ reset: process.argv.includes("--reset") })
     .then(() => process.exit(0)) // il modello locale tiene vivo il processo: si esce esplicitamente
     .catch((err) => {
-      log.error({ err: err.message }, "indicizzazione fallita");
+      log.error({ err: err.message }, "indicizzazione fallita: controlla OPENROUTER_API_KEY nel file .env e la connessione");
       process.exit(1);
     });
 }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 45.0
 
     # Sicurezza: segreto condiviso con il back end (header X-Internal-Token)
-    data_agent_token: SecretStr
+    data_agent_token: SecretStr = Field(min_length=16)  # stessa regola del back end
 
     # Dati
     data_csv_path: Path = REPO_DIR / "data" / "campagne_wayfare.csv"
@@ -34,6 +35,7 @@ class Settings(BaseSettings):
     # Limiti di esecuzione (catena dei timeout: chat 120 s > richiesta 60 s > singola esecuzione 15 s);
     # il back end può concedere meno tempo per singola richiesta (timeout_s, scadenza del turno propagata)
     exec_timeout_s: float = 15.0
+    cleaning_exec_timeout_s: float = 60.0  # il codice di pulizia lavora sull'intero dataset grezzo
     request_timeout_s: float = 60.0
     max_agent_steps: int = Field(default=10, ge=2, le=20)
     max_concurrent_analyses: int = Field(default=2, ge=1, le=8)
@@ -47,3 +49,17 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+SECRET_ENV = ("OPENROUTER_API_KEY", "DATA_AGENT_TOKEN")
+
+
+def scrub_secret_env() -> None:
+    """Toglie i segreti dall'ambiente del processo dopo averli letti nelle impostazioni.
+
+    I processi figli della sandbox ricevono l'ambiente del server: senza questa pulizia il codice generato
+    potrebbe leggere la chiave da `/proc/self/environ`, anche se il figlio la toglie da `os.environ`.
+    """
+    get_settings()  # i valori restano nelle impostazioni già lette
+    for name in SECRET_ENV:
+        os.environ.pop(name, None)

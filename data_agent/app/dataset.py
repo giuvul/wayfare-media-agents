@@ -10,12 +10,13 @@ from __future__ import annotations
 import csv
 import io
 import os
-import pickle
 import threading
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+from . import safe_pickle
 
 ID_COLUMN = "id_riga"
 MAX_DICTIONARY_CHARS = 200_000
@@ -71,8 +72,7 @@ def _cell(v: Any) -> Any:
 
 def clean_page(complete_path: Path, page: int = 1, page_size: int = 50, q: str = "") -> dict:
     """Vista dei dati DOPO la pulizia (tutte le righe deduplicate, con la colonna `valida`)."""
-    with open(complete_path, "rb") as fh:  # file scritto dal servizio stesso
-        df: pd.DataFrame = pickle.load(fh)
+    df: pd.DataFrame = safe_pickle.load_path(complete_path)
     df = df.assign(valida=df["impression_erogate"].notna())
     if q:
         text = df.astype(str).apply(lambda col: col.str.lower())

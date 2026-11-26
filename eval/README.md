@@ -54,6 +54,10 @@ prompt chiede di indicarlo sempre. Il controllo resta severo di proposito.
 **Stabilità** dei casi più difficili, ripetuti 3 volte ciascuno con la versione finale: make-good 3/3,
 lavori a Venezia 3/3, sconti fuori policy 2/3 (stesso motivo), tempo massimo 65 s su 120 disponibili.
 
+Questa prima esecuzione aveva attivo il modello di riserva (`openai/gpt-oss-120b`) e precede il controllo del
+modello effettivo: alcune risposte potrebbero essere state date dalla riserva. Il confronto qui sotto è stato
+eseguito con la riserva disattivata, per questo i risultati di DeepSeek differiscono leggermente (sconti 9/9).
+
 ## Confronto tra modelli
 
 Stessi 20 casi più 3 ripetizioni dei casi "regola applicata ai dati", con tre modelli della stessa fascia (piccoli,

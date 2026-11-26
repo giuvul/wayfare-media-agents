@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 // Documenti della knowledge base su disco (cartella KB_DIR): elenco, lettura, modifica, creazione.
 // Markdown e testo sono modificabili dall'interfaccia; i PDF si possono indicizzare e consultare.
 import { createHash } from "node:crypto";
@@ -6,16 +7,12 @@ import path from "node:path";
 import { extractText, getDocumentProxy } from "unpdf";
 
 import { parseFrontMatter, splitIntoSections, splitMarkdownSections } from "./chunking.js";
+import { HttpError } from "../errors.js";
 
 export const DOC_NAME = /^[A-Za-z0-9][\w.-]{0,80}\.(md|txt|pdf)$/;
 export const MAX_DOC_CHARS = 300_000;
 
-export class DocumentError extends Error {
-  constructor(message, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
+export class DocumentError extends HttpError {}
 
 const kindOf = (id) => path.extname(id).slice(1).toLowerCase();
 
@@ -103,7 +100,7 @@ export function createDocumentStore(kbDir) {
       const exists = await stat(file).then(() => true, () => false);
       if (create && exists) throw new DocumentError("Esiste già un documento con questo nome.", 409);
       if (!create && !exists) throw new DocumentError("Documento non trovato.", 404);
-      const tmp = path.join(kbDir, `.${id}.tmp`);
+      const tmp = path.join(kbDir, `.${id}.${randomUUID()}.tmp`); // due salvataggi insieme non condividono il file
       await writeFile(tmp, content.endsWith("\n") ? content : `${content}\n`, "utf8");
       await rename(tmp, file);
     },

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { createDataAgentClient, createDataAgentTool, FINAL_ANSWER_RESERVE_MS, formatAnalysis } from "../src/tools/dataAgent.js";
+import { createDataAgentClient, createDataAgentTool, ANALYSIS_GRACE_MS, FINAL_ANSWER_RESERVE_MS, formatAnalysis } from "../src/tools/dataAgent.js";
 
 const config = { DATA_AGENT_URL: "http://data-agent.test", DATA_AGENT_TOKEN: "x".repeat(16), DATA_AGENT_TIMEOUT_MS: 75_000 };
 const OK = { answer: "177 campagne.", code: [], charts: [], table: null, cleaning: {}, steps: 1, duration_ms: 10, error: null, completa: true };
@@ -22,9 +22,9 @@ const invoke = (tool, deadline) =>
     { configurable: { deadline } },
   );
 
-test("il data agent riceve il tempo che resta al turno, meno la riserva per la risposta finale", async () => {
+test("il data agent riceve il tempo che resta al turno, meno la riserva per la risposta finale e il margine HTTP", async () => {
   const { requests, client } = fakeDataAgent();
-  await invoke(createDataAgentTool(client), Date.now() + 50_000 + FINAL_ANSWER_RESERVE_MS);
+  await invoke(createDataAgentTool(client), Date.now() + 50_000 + FINAL_ANSWER_RESERVE_MS + ANALYSIS_GRACE_MS);
   const { timeout_s: timeout } = requests[0].body;
   assert.ok(timeout >= 48 && timeout <= 50, `timeout_s=${timeout}`);
 });

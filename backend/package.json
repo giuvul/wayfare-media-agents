@@ -5,13 +5,14 @@
   "description": "Orchestratore Node.js: agente LangChain.js che decide tra RAG (ChromaDB) e data agent Python",
   "type": "module",
   "engines": {
-    "node": ">=22.12"
+    "node": ">=24.2"
   },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "ingest": "node src/rag/ingest.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.2",
@@ -34,5 +35,10 @@
   },
   "allowScripts": {
     "better-sqlite3@12.11.1": true
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "17.14.0"
   }
 }

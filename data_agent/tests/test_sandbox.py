@@ -1,8 +1,12 @@
+import multiprocessing as mp
+import os
 import pickle
+import time
 
 import pandas as pd
 import pytest
 
+from app import safe_pickle
 from app.sandbox import PolicyError, Sandbox, check_code
 
 
@@ -18,6 +22,24 @@ from app.sandbox import PolicyError, Sandbox, check_code
     "pd.read_csv('/etc/passwd')",
     "plt.savefig('/tmp/x.png')",
     "eval('1+1')",
+    # nomi importati direttamente: aggirerebbero il controllo sugli attributi
+    "from pandas import read_csv",
+    "from pandas import read_pickle as rp",
+    "from numpy import load",
+    "from matplotlib.pyplot import savefig",
+    "from pandas import *",
+    # metodi speciali (es. __reduce__ per far eseguire codice a chi deserializza)
+    "class S(str):\n    def __reduce__(self):\n        return (print, ('x',))",
+    "__name__",
+    # file, rete, memoria mappata, estensioni C
+    "np.memmap('x', mode='w+', shape=3)",
+    "np.ctypeslib",
+    "df.to_string('/tmp/x.txt')",
+    "df.to_string(buf='x.txt')",
+    "x = 'https://example.com/?k=1'",
+    "p = '/proc/self/environ'",
+    "pd.eval('1+1')",
+    "fig.canvas.print_png('x.png')",
 ])
 def test_policy_rejects_dangerous_code(code):
     with pytest.raises(PolicyError):
@@ -62,14 +84,64 @@ def test_timeout_kills_the_process(small_frame, tmp_path):
         assert box.run("1 + 1").ok  # dopo il timeout si riparte con un processo nuovo
 
 
-def test_child_process_has_no_secrets(small_frame, tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "segreto")
+def _child_environ(conn):
+    """Eseguita in un processo "spawn", come la sandbox: legge l'ambiente con cui è nato il processo."""
+    with open("/proc/self/environ", "rb") as fh:
+        conn.send(fh.read())
+
+
+@pytest.mark.skipif(not os.path.exists("/proc/self/environ"), reason="solo Linux")
+def test_child_processes_do_not_inherit_secrets(monkeypatch):
+    from app import config
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-segreto-di-prova")
+    monkeypatch.setenv("DATA_AGENT_TOKEN", "token-segreto-di-prova")
+    monkeypatch.setattr(config, "get_settings", lambda: None)
+    config.scrub_secret_env()
+    ctx = mp.get_context("spawn")
+    parent, child = ctx.Pipe()
+    proc = ctx.Process(target=_child_environ, args=(child,))
+    proc.start()
+    environ = parent.recv()
+    proc.join(10)
+    assert b"sk-segreto-di-prova" not in environ and b"token-segreto-di-prova" not in environ
+
+
+def test_child_replies_cannot_run_code_in_the_server(tmp_path):
+    """Anche se la policy venisse aggirata, il server non deserializza oggetti arbitrari dal figlio."""
+    evil = pickle.dumps(_Evil())
+    with pytest.raises(safe_pickle.UnsafePickleError):
+        safe_pickle.loads(evil)
+    assert not (tmp_path / "pwned").exists()
+
+
+class _Evil:
+    def __reduce__(self):
+        return (os.system, ("touch pwned",))
+
+
+def test_safe_pickle_reads_dataframes(small_frame):
+    df = pd.read_pickle(small_frame)
+    frame = df.assign(data=pd.to_datetime("2026-01-01"), testo=df.columns[0], flag=True)
+    frame = frame.astype({"flag": "boolean"})
+    assert safe_pickle.loads(pickle.dumps(frame)).equals(frame)
+
+
+def test_output_and_charts_are_capped(small_frame, tmp_path):
     with Sandbox({"df": small_frame}, tmp_path, exec_timeout_s=30) as box:
-        # os non è importabile; verifichiamo comunque l'ambiente del figlio tramite un modulo ammesso
-        out = box.run("import collections\nprint('ok')")
-        assert out.ok
-    from app.sandbox import SENSITIVE_ENV_MARKERS
-    assert "KEY" in SENSITIVE_ENV_MARKERS
+        out = box.run("for i in range(200000):\n    print('x' * 50)")
+        assert out.ok and len(out.output) < 5000 and "troncato" in out.output
+        out = box.run("for i in range(10):\n    plt.figure()\n    plt.plot([1, 2])")
+        assert out.ok and len(out.charts) == 4
+        assert box.run("x = np.ones(10**10)").ok is False  # oltre il limite di memoria: errore, non OOM del server
+
+
+def test_run_respects_the_remaining_time(small_frame, tmp_path):
+    with Sandbox({"df": small_frame}, tmp_path, exec_timeout_s=30) as box:
+        box.run("1")  # avvio del processo fuori dalla misura
+        started = time.monotonic()
+        out = box.run("while True:\n    pass", timeout_s=2)
+        assert not out.ok and time.monotonic() - started < 10
 
 
 def test_errors_are_returned_not_raised(small_frame, tmp_path):

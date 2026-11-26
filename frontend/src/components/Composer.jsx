@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 
 const MAX = 2000;
 
-export default function Composer({ busy, onSend, onStop }) {
+// sui dispositivi touch il focus automatico aprirebbe la tastiera a ogni cambio di conversazione
+const autoFocus = () => !window.matchMedia("(pointer: coarse)").matches;
+
+export default function Composer({ busy, disabled, onSend, onStop }) {
   const [text, setText] = useState("");
   const ref = useRef(null);
 
@@ -13,12 +16,12 @@ export default function Composer({ busy, onSend, onStop }) {
   }, [text]);
 
   useEffect(() => {
-    if (!busy) ref.current?.focus();
+    if (!busy && autoFocus()) ref.current?.focus();
   }, [busy]);
 
   const submit = (e) => {
     e?.preventDefault();
-    if (busy || !text.trim()) return;
+    if (busy || disabled || !text.trim()) return;
     onSend(text);
     setText("");
   };
@@ -43,7 +46,7 @@ export default function Composer({ busy, onSend, onStop }) {
             Interrompi
           </button>
         ) : (
-          <button type="submit" className="btn btn-primary" disabled={!text.trim()}>
+          <button type="submit" className="btn btn-primary" disabled={disabled || !text.trim()}>
             Invia
           </button>
         )}

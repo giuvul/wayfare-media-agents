@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { api } from "../api.js";
 import { navigate } from "../router.js";
@@ -8,21 +8,30 @@ import { IconBook, IconClose, IconExpand, IconShrink } from "./Icons.jsx";
 /** Pannello laterale con il documento citato e la sezione evidenziata; si può portare a schermo intero. */
 export default function DocDrawer({ target, onClose }) {
   const [fullscreen, setFullscreen] = useState(false);
-  const [state, setState] = useState({ loading: true });
+  const [loaded, setLoaded] = useState({ source: undefined });
+  const closeRef = useRef(null);
+  // lo stato vale per il documento richiesto: finché non arriva quello giusto si mostra il caricamento
+  const state = loaded.source === target.source ? loaded : { loading: true };
 
   useEffect(() => {
     let alive = true;
-    setState({ loading: true });
     (async () => {
       const id = target.source ?? (await api.documents()).documents[0]?.id;
       if (!id) throw new Error("Nessun documento nella knowledge base.");
       const doc = await api.document(id);
-      if (alive) setState({ doc });
-    })().catch((err) => alive && setState({ error: err.message }));
+      if (alive) setLoaded({ source: target.source, doc });
+    })().catch((err) => alive && setLoaded({ source: target.source, error: err.message }));
     return () => {
       alive = false;
     };
   }, [target.source]);
+
+  // finestra modale: il focus entra nel pannello e, alla chiusura, torna dove era (la citazione cliccata)
+  useEffect(() => {
+    const previous = document.activeElement;
+    closeRef.current?.focus();
+    return () => previous?.focus?.();
+  }, []);
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -51,7 +60,7 @@ export default function DocDrawer({ target, onClose }) {
             <button type="button" className="icon-btn" onClick={() => setFullscreen((f) => !f)} title={fullscreen ? "Riduci" : "Schermo intero"}>
               {fullscreen ? <IconShrink /> : <IconExpand />}
             </button>
-            <button type="button" className="icon-btn" onClick={onClose} title="Chiudi (Esc)">
+            <button type="button" className="icon-btn" onClick={onClose} title="Chiudi (Esc)" aria-label="Chiudi" ref={closeRef}>
               <IconClose />
             </button>
           </div>

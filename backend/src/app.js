@@ -5,7 +5,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 
-import { asyncRoute, userFacingError } from "./errors.js";
+import { clientErrorMessage, userFacingError } from "./errors.js";
 import { chatRouter } from "./routes/chat.js";
 import { conversationsRouter } from "./routes/conversations.js";
 import { embeddingsRouter } from "./routes/embeddings.js";
@@ -42,13 +42,13 @@ export function createApp(deps) {
 
   app.get(
     "/api/charts/:chartId",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       if (!CHART_ID.test(req.params.chartId)) return res.status(400).json({ error: "Identificativo grafico non valido." });
       const upstream = await dataAgent.chart(req.params.chartId);
       if (!upstream.ok) return res.status(upstream.status === 404 ? 404 : 502).json({ error: "Grafico non disponibile." });
       res.set({ "Content-Type": "image/png", "Cache-Control": "private, max-age=86400" });
       res.send(Buffer.from(await upstream.arrayBuffer()));
-    }),
+    },
   );
 
   app.get("/api/health", async (_req, res) => {
@@ -70,12 +70,12 @@ export function createApp(deps) {
   });
 
   app.use((_req, res) => res.status(404).json({ error: "Risorsa non trovata." }));
-  // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, _next) => {
     const status = err.type === "entity.too.large" ? 413 : err.status ?? 500;
     if (status >= 500) (req.log ?? log).error({ err }, "errore non gestito");
+    else (req.log ?? log).info({ err: err.message, status }, "richiesta rifiutata");
     if (res.headersSent) return res.end();
-    res.status(status).json({ error: status >= 500 ? userFacingError(err) : err.message });
+    res.status(status).json({ error: status >= 500 ? userFacingError(err) : clientErrorMessage(err) });
   });
   return app;
 }

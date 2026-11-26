@@ -26,7 +26,7 @@ export default function Dictionary() {
       setEditing(false);
       setState({});
       setChanged(true);
-      setTimeout(cleaning.reload, 800);
+      cleaning.reload(800);
     } catch (err) {
       setState({ error: err.message });
     }

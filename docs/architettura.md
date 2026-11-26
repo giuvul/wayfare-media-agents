@@ -136,10 +136,23 @@ il lavoro. I grafici sono salvati automaticamente come PNG; l'ultima tabella pro
 
 ### Sandbox (`sandbox.py`)
 
-Difesa a più livelli: policy statica sull'AST (import da una lista chiusa, niente accesso a file, processi o
-introspezione), processo figlio avviato con `spawn` (non eredita la memoria del server, quindi nemmeno la
-chiave), variabili d'ambiente sensibili rimosse, timeout per esecuzione, esecuzioni serializzate (alcuni modelli
-chiamano più strumenti in parallelo). La policy è difesa in profondità; il confine di sicurezza è il processo.
+Difesa a più livelli:
+
+- **policy statica sull'AST**: import da una lista chiusa (anche `from ... import`), niente funzioni di lettura o
+  scrittura di file, rete, memoria mappata o estensioni C, nessun nome o metodo speciale (`__...__`), nessuna
+  stringa che punti a URL o percorsi di sistema;
+- **processo figlio** avviato con `spawn`: non eredita la memoria del server. Chiave OpenRouter e token interno
+  vengono tolti dall'ambiente del server all'avvio (`scrub_secret_env`), quindi il figlio non li trova nemmeno in
+  `/proc/self/environ`;
+- **limiti del sistema operativo** applicati al figlio dopo il caricamento dei dati: CPU, memoria (3 GB) e
+  dimensione dei file scritti (20 MB); output testuale e numero di grafici (4) limitati;
+- **canale di ritorno in JSON**: il server non deserializza oggetti arbitrari dal figlio. Gli unici pickle
+  (DataFrame del dataset e risultati della pulizia) passano da un unpickler ristretto (`safe_pickle.py`) che
+  ammette solo le classi di pandas e NumPy necessarie;
+- timeout per esecuzione, mai oltre il tempo rimasto all'analisi; esecuzioni serializzate (alcuni modelli chiamano
+  più strumenti in parallelo).
+
+La policy è difesa in profondità; il confine di sicurezza è il processo.
 
 ## 5. Persistenza
 
@@ -165,14 +178,27 @@ della chat e il lavoro va perso. Per questo la **scadenza del turno viene propag
 
 1. la chat fissa la scadenza del turno e la passa all'agente (`configurable.deadline`);
 2. lo strumento `analizza_dati` concede all'analista il tempo che resta, meno 20 s di riserva per la risposta
-   finale dell'orchestratore, e al massimo 60 s; se restano meno di 20 s non avvia l'analisi e chiede al modello
+   finale dell'orchestratore e 15 s di margine per la chiusura dell'analisi, e al massimo 60 s; se restano meno di 20 s non avvia l'analisi e chiede al modello
    di rispondere con i risultati già ottenuti;
 3. il data agent riceve il budget (`timeout_s`) e smette di esplorare con una riserva (15 s, al massimo un quarto
    del budget) per concludere il passo in corso e scrivere la risposta con i risultati parziali;
 4. un'analisi interrotta torna con `completa: false` e l'orchestratore riceve l'indicazione di non ripeterla.
 
 Un turno quindi termina sempre entro la sua scadenza, con una risposta completa o con risultati parziali
-dichiarati come tali.
+dichiarati come tali. I tentativi verso il modello sono gestiti da un solo livello (`modelRetryMiddleware`
+dell'agente, il client HTTP non ritenta), così i tempi restano prevedibili.
+
+Se un turno viene interrotto (Stop, scadenza, riavvio del server) mentre uno strumento lavora, la memoria
+dell'agente resta con una chiamata senza risultato, che i provider rifiutano. Il turno successivo la chiude con
+un risultato d'errore prima della nuova domanda (`unansweredToolCalls` in `agent.js`).
+
+### Errori
+
+Il back end distingue due casi. Gli errori 4xx mostrano solo messaggi scritti per l'utente (`HttpError` e le
+classi che la estendono, o i dettagli in italiano del data agent), mai i testi interni delle librerie; gli errori
+5xx vengono registrati nel log e tradotti da `userFacingError` in un messaggio generico. Gli strumenti
+dell'agente non lanciano eccezioni: restituiscono un risultato `ERRORE: ...` che il modello spiega all'utente,
+con `ok: false` nell'artefatto per l'interfaccia.
 
 ## 7. Deployment
 
@@ -184,6 +210,10 @@ front end.
 - Solo il front end è pubblicato, su `127.0.0.1`; gli altri servizi sono raggiungibili solo sulla rete interna.
 - Utenti non privilegiati, filesystem in sola lettura, nessuna capability, `no-new-privileges`. Si scrive solo
   nei volumi: `storage` (SQLite e modelli locali), `kb`, `dataset`, `analysis-cache`, `charts`, `chroma`.
+  Eccezione: l'immagine ufficiale di Chroma gira come root con filesystem scrivibile; ha comunque nessuna
+  capability e `no-new-privileges`, e non è raggiungibile dall'esterno.
+- nginx aggiunge alle pagine statiche le intestazioni di sicurezza (`Content-Security-Policy` con
+  `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`); le risposte `/api` hanno quelle di helmet.
   I volumi di documentazione e dataset vengono popolati dall'immagine al primo avvio, poi le modifiche fatte
   dall'interfaccia sopravvivono a rebuild e aggiornamenti.
 - Immagini Debian (glibc) per back end e data agent, perché il runtime ONNX degli embedding locali non supporta
@@ -219,6 +249,9 @@ front end.
 ## 9. Limiti noti
 
 - Nessuna autenticazione degli utenti: uso locale o su rete interna.
+- Il processo della sandbox gira con lo stesso utente del data agent e ne condivide la rete: la policy blocca
+  file e rete dal codice generato, ma non è un isolamento a livello di sistema (che richiederebbe un container per
+  esecuzione o seccomp). In Docker il filesystem è comunque in sola lettura fuori dai volumi.
 - Il modello effettivo si legge con la chiave attuale: per le risposte generate con una chiave poi sostituita,
   o dal data agent con una chiave diversa da quella del back end, l'indicatore resta "non disponibile".
 - Con i modelli economici le domande che applicano regole articolate ai dati (es. make-good con esclusioni) a

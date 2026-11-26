@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { ToolMessage } from "@langchain/core/messages";
 import { test } from "node:test";
 
-import { createOrchestrator, runTurn } from "../src/agent.js";
+import { createOrchestrator, EMPTY_ANSWER, runTurn } from "../src/agent.js";
 import { createDataAgentTool } from "../src/tools/dataAgent.js";
 import { createKnowledgeBaseTool } from "../src/tools/knowledgeBase.js";
 import { ScriptedChatModel } from "./fakeModel.js";
@@ -82,17 +83,21 @@ test("il secondo turno della stessa sessione non ripete gli step del primo", asy
 test("small talk: nessuno strumento", async () => {
   const model = new ScriptedChatModel(["Ciao! Posso aiutarti con regole e dati delle campagne."]);
   const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
-  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "ciao" });
+  const events = [];
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "ciao", onEvent: (e) => events.push(e) });
   assert.equal(res.steps.length, 0);
+  assert.equal(res.answer, "Ciao! Posso aiutarti con regole e dati delle campagne.");
+  assert.ok(!events.includes("tool_start"));
 });
 
 test("errore del data agent: lo step risulta fallito ma il turno si chiude", async () => {
-  const failing = createDataAgentTool({ analyze: async () => { throw new Error("data agent HTTP 503: non pronto"); } });
+  const notReady = Object.assign(new Error("data agent HTTP 503: Dataset non pronto (stato: cleaning)."), { status: 503, detail: "Dataset non pronto (stato: cleaning)." });
+  const failing = createDataAgentTool({ analyze: async () => { throw notReady; } });
   const model = new ScriptedChatModel([call("c1", "analizza_dati", { task: "spesa totale per formato" }), "L'analisi non è disponibile."]);
   const { agent, checkpointer } = createOrchestrator({ model, tools: [tools[0], failing], maxModelCalls: 6 });
   const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "spesa?" });
   assert.equal(res.steps[0].ok, false);
-  assert.match(res.steps[0].artifact.error, /503/);
+  assert.equal(res.steps[0].artifact.error, "Dataset non pronto (stato: cleaning)."); // il dettaglio, non "HTTP 503"
 });
 
 test("il turno raccoglie gli id delle generazioni di orchestratore e analista, solo del turno corrente", async () => {
@@ -105,4 +110,38 @@ test("il turno raccoglie gli id delle generazioni di orchestratore e analista, s
   const res = await runTurn({ agent, checkpointer, sessionId, message: "quante campagne?", onEvent: (e, d) => events.push([e, d]) });
   assert.deepEqual(res.generations, { orchestratore: ["gen-scripted-2", "gen-scripted-3"], analista: ["gen-analista-1"] });
   assert.deepEqual(events.find(([e]) => e === "final")[1].generations, res.generations);
+});
+
+test("un turno interrotto durante uno strumento non blocca la conversazione", async () => {
+  const slow = createDataAgentTool({
+    analyze: (_task, { signal }) => new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(signal.reason))),
+  });
+  const model = new ScriptedChatModel([call("c1", "analizza_dati", { task: "spesa totale per formato" }), "Eccomi."]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools: [tools[0], slow], maxModelCalls: 6 });
+  const sessionId = randomUUID();
+  const stop = new AbortController();
+  const first = runTurn({ agent, checkpointer, sessionId, message: "spesa?", signal: stop.signal, onEvent: (e) => e === "tool_start" && stop.abort() });
+  await assert.rejects(first);
+  // la memoria contiene la chiamata allo strumento senza risultato: il turno successivo la chiude prima della domanda
+  const res = await runTurn({ agent, checkpointer, sessionId, message: "ci sei?" });
+  assert.equal(res.answer, "Eccomi.");
+  const history = model.received.at(-1);
+  const closed = history.findIndex((m) => ToolMessage.isInstance(m) && m.tool_call_id === "c1");
+  assert.ok(closed > 0 && closed < history.findIndex((m) => m.content === "ci sei?"));
+});
+
+test("un turno senza testo finale ha comunque una risposta", async () => {
+  const model = new ScriptedChatModel([call("c1", "cerca_documentazione", { query: "penali cancellazione" }), "  "]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools, maxModelCalls: 6 });
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "penali?" });
+  assert.equal(res.answer, EMPTY_ANSWER);
+});
+
+test("documentazione non raggiungibile: step fallito, il modello lo sa", async () => {
+  const kbDown = createKnowledgeBaseTool({ search: async () => { throw new Error("ECONNREFUSED chroma:8000"); } });
+  const model = new ScriptedChatModel([call("c1", "cerca_documentazione", { query: "penali cancellazione" }), "Non posso consultarla ora."]);
+  const { agent, checkpointer } = createOrchestrator({ model, tools: [kbDown, tools[1]], maxModelCalls: 6 });
+  const res = await runTurn({ agent, checkpointer, sessionId: randomUUID(), message: "penali?" });
+  assert.equal(res.steps[0].ok, false);
+  assert.doesNotMatch(JSON.stringify(res.steps[0].artifact), /ECONNREFUSED|chroma/); // nessun dettaglio interno
 });

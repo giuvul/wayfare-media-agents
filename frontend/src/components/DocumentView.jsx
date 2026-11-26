@@ -11,7 +11,8 @@ export default function DocumentView({ doc, highlight }) {
   useEffect(() => {
     if (!highlight) return;
     const el = ref.current?.querySelector(".doc-block.is-highlighted");
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }, [highlight, doc]);
 
   return (

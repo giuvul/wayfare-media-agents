@@ -1,6 +1,6 @@
 // Persistenza locale in SQLite: cronologia delle conversazioni e impostazioni dell'utente.
 // La memoria dell'agente (checkpoint LangGraph) vive in un file separato gestito da SqliteSaver.
-import { chmodSync, mkdirSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
@@ -31,11 +31,15 @@ const now = () => new Date().toISOString();
 
 export function openDatabase(storageDir) {
   const inMemory = storageDir === ":memory:";
-  if (!inMemory) mkdirSync(storageDir, { recursive: true, mode: 0o700 });
+  if (!inMemory) {
+    mkdirSync(storageDir, { recursive: true });
+    chmodSync(storageDir, 0o700); // anche se la cartella esiste già (es. creata dal Dockerfile)
+  }
   const file = inMemory ? ":memory:" : path.join(storageDir, "app.db");
   const db = new Database(file);
-  if (!inMemory) chmodSync(file, 0o600); // contiene la chiave API eventualmente impostata dall'interfaccia
   db.pragma("journal_mode = WAL");
+  // contiene la chiave API eventualmente impostata dall'interfaccia: anche i file WAL, che ne hanno copia
+  if (!inMemory) for (const f of [file, `${file}-wal`, `${file}-shm`]) if (existsSync(f)) chmodSync(f, 0o600);
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA);
   return db;
@@ -98,5 +102,7 @@ export function createSettingsStore(db) {
     get: (key) => get.get(key)?.value ?? null,
     set: (key, value) => set.run(key, value, now()),
     delete: (key) => del.run(key),
+    /** Esegue più scritture in una transazione: tutte o nessuna. */
+    transaction: (fn) => db.transaction(fn)(),
   };
 }

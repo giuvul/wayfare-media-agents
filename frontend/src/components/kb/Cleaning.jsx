@@ -15,7 +15,7 @@ export default function Cleaning() {
     try {
       setError(null);
       await api.rebuildCleaning("regenerate");
-      setTimeout(reload, 500);
+      reload(500);
     } catch (err) {
       setError(err.message);
     }

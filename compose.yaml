@@ -20,6 +20,9 @@ services:
   chroma:
     image: chromadb/chroma:1.5.9
     restart: unless-stopped
+    # l'immagine ufficiale gira come root: niente capability né nuovi privilegi (il filesystem resta scrivibile)
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
     volumes:
       - chroma:/data
     healthcheck:
@@ -47,12 +50,9 @@ services:
 
   # indicizza la documentazione in Chroma e termina (idempotente: ai riavvii salta i documenti invariati)
   ingest:
+    <<: *hardening
     image: wayfare/backend # stessa immagine del back end (costruita dal servizio backend)
     command: ["node", "src/rag/ingest.js"]
-    read_only: true
-    tmpfs: [/tmp]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [ALL]
     env_file: .env
     environment: &backend-env
       # indirizzi e percorsi del container: prevalgono su eventuali valori locali nel .env
@@ -70,7 +70,7 @@ services:
       - kb:/app/data/kb
     depends_on:
       chroma: { condition: service_healthy }
-    restart: "no"
+    restart: "no" # termina dopo l'indicizzazione (prevale su quello di x-hardening)
 
   backend:
     <<: *hardening

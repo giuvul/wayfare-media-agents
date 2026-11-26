@@ -1,4 +1,22 @@
 // Messaggi di errore per l'utente: in italiano, senza dettagli interni (stack, URL, chiavi).
+
+/** Errore con un messaggio pensato per l'utente e uno stato HTTP (4xx): l'API lo restituisce così com'è. */
+export class HttpError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** Messaggio per un errore 4xx: solo testi scritti da noi (HttpError o dettagli del data agent), mai quelli delle librerie. */
+export function clientErrorMessage(err) {
+  if (err instanceof HttpError) return err.message;
+  if (err.type === "entity.too.large") return "Richiesta troppo grande.";
+  if (err.type === "entity.parse.failed") return "Il corpo della richiesta non è un JSON valido.";
+  if (typeof err.detail === "string") return err.detail; // HTTPException del data agent, già in italiano
+  return "Richiesta non valida.";
+}
+
 export function userFacingError(err) {
   if (err.name === "AbortError" || err.name === "TimeoutError") return "La richiesta ha impiegato troppo tempo. Riprova o semplifica la domanda.";
   if (/\b401\b|unauthori[sz]ed|invalid api key|no auth/i.test(err.message)) return "La chiave API di OpenRouter non è valida: controllala nelle Impostazioni.";
@@ -10,6 +28,3 @@ export function userFacingError(err) {
   }
   return "Si è verificato un errore durante l'elaborazione. Riprova tra poco.";
 }
-
-/** Gestore di errori per le route asincrone di Express. */
-export const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);

@@ -2,10 +2,10 @@
 
 import pandas as pd
 import pytest
+from generate_dataset import reference_clean
 
 from app.cleaning import build_profile, validate
 from app.quality import analyze, blocking_problems, parse_dictionary, residuals
-from generate_dataset import reference_clean
 
 
 @pytest.fixture(scope="module")

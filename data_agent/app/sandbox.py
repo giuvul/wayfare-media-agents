@@ -1,16 +1,23 @@
 """Esecuzione isolata del codice Python generato dall'LLM.
 
 Difesa a più livelli, proporzionata a un servizio interno:
-1. Policy statica (AST): import solo da una lista chiusa, niente funzioni o attributi che
-   leggono/scrivono file, aprono processi o permettono introspezione (`__class__`, `getattr`...).
-2. Processo figlio dedicato, avviato con "spawn": non eredita la memoria del server (quindi
-   nemmeno la chiave API) e ripulisce le variabili d'ambiente sensibili all'avvio.
-3. Timeout per ogni esecuzione: se scade il processo viene terminato.
-4. Nel deployment con Docker il container gira come utente non-root, con filesystem di sola
-   lettura tranne la cartella dei grafici, e la porta non è esposta all'esterno.
+1. Policy statica (AST): import solo da una lista chiusa; niente funzioni, attributi o nomi importati che
+   leggono/scrivono file o rete, aprono processi o permettono introspezione (`__class__`, `getattr`,
+   metodi speciali come `__reduce__`); niente percorsi di sistema o URL nelle stringhe.
+2. Processo figlio dedicato, avviato con "spawn": non eredita la memoria del server. Il server toglie i
+   segreti dal proprio ambiente all'avvio (`config.scrub_secret_env`), quindi il figlio non li riceve
+   nemmeno in `/proc/self/environ`; il figlio ripulisce comunque le variabili sensibili.
+3. Il figlio risponde solo in JSON; i DataFrame restituiti alla pulizia passano da un unpickler ristretto
+   (`safe_pickle`): il codice generato non può far eseguire nulla al server.
+4. Limiti per ogni esecuzione: tempo (il processo viene terminato), CPU, memoria, dimensione dei file,
+   output e numero di grafici.
+5. Nel deployment con Docker il container gira come utente non-root, senza capability, con filesystem di
+   sola lettura tranne i volumi dei dati, e la porta non è esposta all'esterno.
 
 La policy statica è difesa in profondità, non un confine di sicurezza: il confine è il processo
-(e il container). Per questo i livelli sono indipendenti.
+(e il container). Per questo i livelli sono indipendenti. Limite noto: il figlio condivide utente e rete
+del container (servono per OpenRouter); un isolamento completo richiederebbe un container separato senza
+rete per l'esecuzione del codice.
 """
 
 from __future__ import annotations
@@ -18,9 +25,11 @@ from __future__ import annotations
 import ast
 import contextlib
 import io
+import json
 import multiprocessing as mp
 import os
 import pickle
+import re
 import threading
 import uuid
 from dataclasses import dataclass, field
@@ -28,7 +37,12 @@ from multiprocessing.connection import Connection
 from pathlib import Path
 from typing import Any
 
+from . import safe_pickle
+
 MAX_OUTPUT_CHARS = 4000
+MAX_CHARTS = 4  # grafici salvati per esecuzione; gli altri vengono chiusi
+MEMORY_LIMIT_BYTES = 3 * 1024**3  # spazio di indirizzamento del figlio (pandas, numpy e matplotlib inclusi)
+FILE_SIZE_LIMIT_BYTES = 20 * 1024**2  # un grafico PNG pesa ~100 KB
 
 ALLOWED_IMPORTS = {
     "pandas", "numpy", "matplotlib", "matplotlib.pyplot", "matplotlib.ticker", "matplotlib.dates",
@@ -43,10 +57,17 @@ FORBIDDEN_ATTRIBUTES = {
     "to_csv", "to_excel", "to_parquet", "to_pickle", "to_json", "to_sql", "to_hdf", "to_feather",
     "to_html", "to_latex", "to_clipboard", "to_stata", "to_orc", "to_xml", "tofile", "savefig",
     "save", "savez", "savez_compressed", "savetxt", "load", "loadtxt", "fromfile", "genfromtxt",
+    "fromregex", "memmap", "open_memmap", "DataSource", "HDFStore", "ExcelWriter", "ExcelFile", "imsave",
+    "imread", "load_dataset", "get_data_home",
     # moduli e funzioni di sistema raggiungibili come attributi
     "io", "os", "sys", "subprocess", "builtins", "system", "popen", "remove", "unlink", "rmdir",
+    "lib", "ctypes", "ctypeslib", "f2py", "eval",
 }
-FORBIDDEN_ATTRIBUTE_PREFIXES = ("__", "read_")
+FORBIDDEN_ATTRIBUTE_PREFIXES = ("__", "read_", "print_")
+# metodi che scrivono su file se ricevono un percorso (`buf`): ammessi solo senza argomenti posizionali
+WRITES_WITH_BUF = {"to_string", "to_markdown"}
+# percorsi di sistema e URL nelle stringhe: il codice lavora solo sui dati già caricati
+FORBIDDEN_STRINGS = re.compile(r"(?i)^\s*(https?|ftp|file)://|/(proc|etc|sys|dev|root|home|app|tmp)(/|$)|\.env\b|__")
 SENSITIVE_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 
 
@@ -66,17 +87,30 @@ def check_code(code: str) -> ast.Module:
                 if alias.name not in ALLOWED_IMPORTS:
                     raise PolicyError(f"Import non consentito: {alias.name}. Moduli ammessi: {sorted(ALLOWED_IMPORTS)}")
         elif isinstance(node, ast.ImportFrom):
-            if node.module not in ALLOWED_IMPORTS:
+            if node.module not in ALLOWED_IMPORTS or node.level:
                 raise PolicyError(f"Import non consentito: {node.module}. Moduli ammessi: {sorted(ALLOWED_IMPORTS)}")
-        elif isinstance(node, ast.Name) and node.id in FORBIDDEN_NAMES:
+            for alias in node.names:  # `from pandas import read_csv` aggirerebbe il controllo sugli attributi
+                if alias.name == "*" or _forbidden_name(alias.name):
+                    raise PolicyError(f"Import non consentito: `{alias.name}` da {node.module}.")
+        elif isinstance(node, ast.Name) and (node.id in FORBIDDEN_NAMES or node.id.startswith("__")):
             raise PolicyError(f"Uso non consentito di `{node.id}`.")
-        elif isinstance(node, ast.Attribute):
-            if node.attr in FORBIDDEN_ATTRIBUTES or node.attr.startswith(FORBIDDEN_ATTRIBUTE_PREFIXES):
-                raise PolicyError(
-                    f"Attributo non consentito: `.{node.attr}`. Non leggere né scrivere file: "
-                    "i dati sono già caricati e i grafici aperti vengono salvati automaticamente."
-                )
+        elif isinstance(node, ast.Attribute) and _forbidden_name(node.attr):
+            raise PolicyError(
+                f"Attributo non consentito: `.{node.attr}`. Non leggere né scrivere file: "
+                "i dati sono già caricati e i grafici aperti vengono salvati automaticamente."
+            )
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name.startswith("__"):
+            raise PolicyError(f"Metodi speciali non consentiti: `{node.name}`.")
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in WRITES_WITH_BUF:
+            if node.args or any(k.arg in ("buf", None) for k in node.keywords):
+                raise PolicyError(f"`.{node.func.attr}()` non può scrivere su file: usalo senza percorso.")
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str) and FORBIDDEN_STRINGS.search(node.value):
+            raise PolicyError("Percorsi di sistema, URL e nomi speciali non sono consentiti: lavora sui dati già caricati.")
     return tree
+
+
+def _forbidden_name(name: str) -> bool:
+    return name in FORBIDDEN_NAMES or name in FORBIDDEN_ATTRIBUTES or name.startswith(FORBIDDEN_ATTRIBUTE_PREFIXES)
 
 
 # --- Processo figlio --------------------------------------------------------------------
@@ -110,30 +144,51 @@ def _scrub_environment() -> None:
     os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 
-def _limit_cpu(seconds: int) -> None:
+def _limit_resources(cpu_seconds: int) -> None:
+    """CPU, memoria e dimensione dei file del figlio: un ciclo infinito o un array enorme non toccano il server."""
     try:
         import resource  # solo Unix
 
-        resource.setrlimit(resource.RLIMIT_CPU, (seconds, seconds))
-    except (ImportError, ValueError, OSError):
+        for limit, value in ((resource.RLIMIT_CPU, cpu_seconds), (resource.RLIMIT_AS, MEMORY_LIMIT_BYTES),
+                             (resource.RLIMIT_FSIZE, FILE_SIZE_LIMIT_BYTES)):
+            with contextlib.suppress(ValueError, OSError):
+                resource.setrlimit(limit, (value, value))
+    except ImportError:
         pass
+
+
+class _CappedOutput(io.StringIO):
+    """stdout con un tetto: oltre il limite il testo viene scartato invece di occupare memoria."""
+
+    def __init__(self, limit: int):
+        super().__init__()
+        self._room = limit
+        self.truncated = False
+
+    def write(self, text: str) -> int:
+        if self._room > 0:
+            super().write(text[: self._room])
+            self._room -= len(text)
+        if self._room < 0:
+            self.truncated = True
+        return len(text)
 
 
 def _run_cell(tree: ast.Module, namespace: dict) -> str:
     """Esegue il codice come una cella di notebook: se l'ultima istruzione è un'espressione ne stampa il valore."""
-    buffer = io.StringIO()
+    buffer = _CappedOutput(MAX_OUTPUT_CHARS)
     last_expr = None
     if tree.body and isinstance(tree.body[-1], ast.Expr):
         last_expr = ast.Expression(tree.body.pop().value)
     with contextlib.redirect_stdout(buffer):
-        exec(compile(tree, "<agente>", "exec"), namespace)  # noqa: S102 - eseguito nel processo isolato
+        exec(compile(tree, "<agente>", "exec"), namespace)
         if last_expr is not None:
-            value = eval(compile(last_expr, "<agente>", "eval"), namespace)  # noqa: S307
+            value = eval(compile(last_expr, "<agente>", "eval"), namespace)
             if value is not None:
                 print(_display(value))
     output = buffer.getvalue()
-    if len(output) > MAX_OUTPUT_CHARS:
-        output = output[:MAX_OUTPUT_CHARS] + f"\n... [output troncato a {MAX_OUTPUT_CHARS} caratteri]"
+    if buffer.truncated:
+        output += f"\n... [output troncato a {MAX_OUTPUT_CHARS} caratteri]"
     return output
 
 
@@ -149,12 +204,13 @@ def _save_open_figures(charts_dir: Path) -> list[str]:
     import matplotlib.pyplot as plt
 
     ids = []
-    for num in plt.get_fignums():
+    for num in plt.get_fignums()[:MAX_CHARTS]:
         fig = plt.figure(num)
         chart_id = uuid.uuid4().hex
         fig.savefig(charts_dir / f"{chart_id}.png", dpi=144, bbox_inches="tight", facecolor=fig.get_facecolor())
         plt.close(fig)
         ids.append(chart_id)
+    plt.close("all")  # oltre MAX_CHARTS: scartati
     return ids
 
 
@@ -178,7 +234,7 @@ def _to_table(value: Any, max_rows: int = 50) -> dict | None:
 
 
 def _json_safe(v: Any) -> Any:
-    if v is None or isinstance(v, (str, int, float, bool)):
+    if v is None or type(v) in (str, int, float, bool):  # tipi esatti: niente sottoclassi definite dal codice
         return v
     if hasattr(v, "isoformat"):
         return v.isoformat()
@@ -187,9 +243,15 @@ def _json_safe(v: Any) -> Any:
     return str(v)
 
 
+def _send(conn: Connection, reply: dict, frame_bytes: bytes | None = None) -> None:
+    """Risposte del figlio solo in JSON (il server non deserializza mai oggetti Python arbitrari dal figlio)."""
+    conn.send_bytes(json.dumps({**reply, "has_frame": frame_bytes is not None}, default=str).encode())
+    if frame_bytes is not None:
+        conn.send_bytes(frame_bytes)
+
+
 def _worker_main(conn: Connection, frames: dict[str, str], charts_dir: str, cpu_limit_s: int) -> None:
     _scrub_environment()
-    _limit_cpu(cpu_limit_s)
     _configure_matplotlib()
     import matplotlib.pyplot as plt
     import numpy as np
@@ -198,10 +260,10 @@ def _worker_main(conn: Connection, frames: dict[str, str], charts_dir: str, cpu_
 
     namespace: dict[str, Any] = {"pd": pd, "np": np, "plt": plt, "sns": sns}
     for name, path in frames.items():
-        with open(path, "rb") as fh:
-            namespace[name] = pickle.load(fh)  # file scritto dal server stesso, non da input esterno
+        namespace[name] = safe_pickle.load_path(path)
+    _limit_resources(cpu_limit_s)  # dopo gli import e il caricamento dei dati
     charts = Path(charts_dir)
-    conn.send({"ok": True, "ready": True})
+    _send(conn, {"ok": True, "ready": True})
     while True:
         try:
             msg = conn.recv()
@@ -214,18 +276,18 @@ def _worker_main(conn: Connection, frames: dict[str, str], charts_dir: str, cpu_
             if op == "exec":
                 tree = check_code(msg["code"])  # ricontrollo anche nel figlio
                 output = _run_cell(tree, namespace)
-                conn.send({"ok": True, "output": output, "charts": _save_open_figures(charts)})
+                _send(conn, {"ok": True, "output": output, "charts": _save_open_figures(charts)})
             elif op == "table":
-                conn.send({"ok": True, "table": _to_table(namespace.get(msg["name"]))})
+                _send(conn, {"ok": True, "table": _to_table(namespace.get(msg["name"]))})
             elif op == "get_frame":
                 value = namespace.get(msg["name"])
-                conn.send({"ok": True, "frame": value if isinstance(value, pd.DataFrame) else None,
-                           "extra": _json_safe_tree(namespace.get(msg.get("extra_name", ""), None))})
+                frame = pickle.dumps(pd.DataFrame(value)) if isinstance(value, pd.DataFrame) else None
+                _send(conn, {"ok": True, "extra": _json_safe_tree(namespace.get(msg.get("extra_name", "")))}, frame)
             else:
-                conn.send({"ok": False, "error": f"operazione sconosciuta: {op}"})
+                _send(conn, {"ok": False, "error": f"operazione sconosciuta: {op}"})
         except Exception as exc:  # l'errore torna all'agente, che può correggersi
             plt.close("all")
-            conn.send({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
+            _send(conn, {"ok": False, "error": f"{type(exc).__name__}: {exc}"})
 
 
 def _json_safe_tree(value: Any) -> Any:
@@ -249,11 +311,14 @@ class ExecResult:
 class Sandbox:
     """Un interprete Python isolato con stato persistente tra le esecuzioni (come un notebook)."""
 
-    def __init__(self, frames: dict[str, Path], charts_dir: Path, exec_timeout_s: float, cpu_limit_s: int = 120):
+    def __init__(self, frames: dict[str, Path], charts_dir: Path, exec_timeout_s: float, cpu_limit_s: int = 120,
+                 start_timeout_s: float = 60, reply_timeout_s: float = 30):
         self._frames = {k: str(v) for k, v in frames.items()}
         self._charts_dir = charts_dir
         self._timeout = exec_timeout_s
         self._cpu_limit = cpu_limit_s
+        self._start_timeout = start_timeout_s  # import di pandas/matplotlib e caricamento dei dati
+        self._reply_timeout = reply_timeout_s  # operazioni di servizio (tabella, DataFrame), non codice generato
         self._ctx = mp.get_context("spawn")
         self._proc: mp.process.BaseProcess | None = None
         self._conn: Connection | None = None
@@ -261,7 +326,7 @@ class Sandbox:
         # con stato, come un notebook, quindi le richieste vengono eseguite una alla volta, nell'ordine.
         self._lock = threading.RLock()
 
-    def __enter__(self) -> "Sandbox":
+    def __enter__(self) -> Sandbox:
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -274,9 +339,19 @@ class Sandbox:
         )
         self._proc.start()
         self._conn = parent
-        if not parent.poll(60) or not parent.recv().get("ready"):
+        if not parent.poll(self._start_timeout) or not self._receive().get("ready"):
             self.close()
             raise RuntimeError("Il processo di esecuzione non si è avviato.")
+
+    def _receive(self) -> dict:
+        """Legge una risposta JSON del figlio; un DataFrame allegato passa dall'unpickler ristretto."""
+        assert self._conn is not None
+        reply = json.loads(self._conn.recv_bytes())
+        if not isinstance(reply, dict):
+            raise ValueError("risposta non valida dal processo di esecuzione")
+        if reply.pop("has_frame", False):
+            reply["frame"] = safe_pickle.loads(self._conn.recv_bytes())
+        return reply
 
     def _request(self, msg: dict, timeout: float) -> dict:
         with self._lock:
@@ -292,17 +367,22 @@ class Sandbox:
             return {"ok": False, "error": f"Esecuzione interrotta dopo {timeout:.0f} s (timeout). "
                                           "Lo stato delle variabili è stato azzerato: semplifica il calcolo."}
         try:
-            return self._conn.recv()
+            return self._receive()
         except EOFError:
             self.close()
             return {"ok": False, "error": "Il processo di esecuzione è terminato inaspettatamente (limite di risorse)."}
+        except (ValueError, safe_pickle.UnsafePickleError) as exc:
+            self.close()
+            return {"ok": False, "error": f"Risposta rifiutata dal server: {exc}"}
 
-    def run(self, code: str) -> ExecResult:
+    def run(self, code: str, timeout_s: float | None = None) -> ExecResult:
+        """`timeout_s`: tempo rimasto al chiamante, se inferiore al limite per esecuzione."""
         try:
             check_code(code)
         except PolicyError as exc:
             return ExecResult(ok=False, error=f"Codice rifiutato dalla policy di sicurezza: {exc}")
-        reply = self._request({"op": "exec", "code": code}, self._timeout)
+        timeout = self._timeout if timeout_s is None else max(1.0, min(self._timeout, timeout_s))
+        reply = self._request({"op": "exec", "code": code}, timeout)
         if reply.get("ok"):
             return ExecResult(ok=True, output=reply.get("output", ""), charts=reply.get("charts", []))
         return ExecResult(ok=False, error=reply.get("error", "errore sconosciuto"))
@@ -311,11 +391,11 @@ class Sandbox:
         with self._lock:
             if self._proc is None or not self._proc.is_alive():
                 return None
-            reply = self._request_locked({"op": "table", "name": name}, 10)
+            reply = self._request_locked({"op": "table", "name": name}, self._reply_timeout)
         return reply.get("table") if reply.get("ok") else None
 
     def get_frame(self, name: str, extra_name: str = "") -> tuple[Any, Any]:
-        reply = self._request({"op": "get_frame", "name": name, "extra_name": extra_name}, 30)
+        reply = self._request({"op": "get_frame", "name": name, "extra_name": extra_name}, self._reply_timeout)
         if not reply.get("ok"):
             raise RuntimeError(reply.get("error"))
         return reply.get("frame"), reply.get("extra")

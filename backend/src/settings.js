@@ -1,16 +1,12 @@
 // Impostazioni modificabili dall'interfaccia: chiave API OpenRouter e modello.
 // Valori di default dal .env; quelli scelti dall'utente sono salvati in SQLite e hanno la precedenza.
 // La chiave non viene mai restituita al browser né scritta nei log: solo una versione mascherata.
+import { HttpError } from "./errors.js";
 
 const MODELS_TTL_MS = 60 * 60 * 1000;
 const KEY_INFO_TTL_MS = 60 * 1000;
 
-export class SettingsError extends Error {
-  constructor(message, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
+export class SettingsError extends HttpError {}
 
 export function maskKey(key) {
   if (!key) return null;
@@ -119,24 +115,29 @@ export function createSettingsService({ config, store, fetchImpl = fetch }) {
         fallbackModels: config.LLM_FALLBACK_MODELS,
       };
     },
+    /** Prima si verifica tutto, poi si scrive: una richiesta con chiave valida e modello errato non cambia nulla. */
     async update({ apiKey, model, resetApiKey = false, resetModel = false }) {
+      const writes = [];
       if (apiKey !== undefined) {
         const key = apiKey.trim();
         if (!/^[\w-]{20,200}$/.test(key)) throw new SettingsError("Formato della chiave non valido.");
         if ((await fetchKeyInfo(key)) === null) throw new SettingsError("OpenRouter ha rifiutato la chiave: controlla di averla copiata per intero.");
-        store.set("openrouter_api_key", key);
-        keyInfoCache = { at: 0, key: null, info: null };
+        writes.push(() => store.set("openrouter_api_key", key));
       } else if (resetApiKey) {
-        store.delete("openrouter_api_key");
+        writes.push(() => store.delete("openrouter_api_key"));
       }
       if (model !== undefined) {
         const models = await listModels();
         if (!models.some((m) => m.id === model)) throw new SettingsError("Modello non trovato o senza supporto al tool calling.");
-        store.set("llm_model", model);
+        writes.push(() => store.set("llm_model", model));
       } else if (resetModel) {
-        store.delete("llm_model");
+        writes.push(() => store.delete("llm_model"));
       }
-      version += 1;
+      if (writes.length) {
+        store.transaction(() => writes.forEach((write) => write()));
+        keyInfoCache = { at: 0, key: null, info: null };
+        version += 1; // l'orchestratore viene ricreato con le nuove impostazioni
+      }
       return this.describe();
     },
     listModels,

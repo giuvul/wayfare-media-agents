@@ -12,5 +12,6 @@ RUN npm run build
 # nginx senza privilegi di root (porta 8080)
 FROM nginxinc/nginx-unprivileged:1.30.6-alpine-slim
 COPY frontend/docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/docker/security-headers.inc /etc/nginx/conf.d/security-headers.inc
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
 EXPOSE 8080

@@ -12,6 +12,7 @@ numeri a ogni domanda (interprete deterministico).
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import pickle
@@ -23,6 +24,7 @@ from pathlib import Path
 import pandas as pd
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from . import safe_pickle
 from .config import Settings
 from .llm import build_llm
 from .quality import Schema, analyze, blocking_problems, numeric, parse_dictionary, residuals
@@ -82,10 +84,6 @@ class CleanedData:
     source: str  # "cache" | "riusata" (codice già validato, dati cambiati) | "generata" (scritta dall'LLM)
     stats: dict
     quality: dict  # {"grezzo": analisi del file grezzo, "residui": {id anomalia: righe ancora presenti}}
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def build_profile(raw: pd.DataFrame, schema: Schema, quality: dict | None = None) -> dict:
@@ -175,7 +173,7 @@ def _message_text(msg) -> str:
 
 def _run_cleaning(code: str, raw: pd.DataFrame, raw_path: Path, settings: Settings, schema: Schema):
     """Esegue `pulisci` nella sandbox e verifica il risultato. Restituisce (df_pulito, report, problemi, analisi)."""
-    with Sandbox({"df_grezzo": raw_path}, settings.charts_dir, exec_timeout_s=60) as box:
+    with Sandbox({"df_grezzo": raw_path}, settings.charts_dir, exec_timeout_s=settings.cleaning_exec_timeout_s) as box:
         result = box.run(code + "\n_df_pulito, _report = pulisci(df_grezzo.copy())\n")
         if not result.ok:
             return None, [], [f"Errore in esecuzione: {result.error}"], None
@@ -185,8 +183,8 @@ def _run_cleaning(code: str, raw: pd.DataFrame, raw_path: Path, settings: Settin
     problems = validate(raw, clean)
     try:
         clean_quality = analyze(clean, schema)  # stessi controlli del grezzo, sui dati puliti
-    except Exception as exc:  # noqa: BLE001 - un risultato con tipi inattesi non deve far cadere il servizio
-        return clean, [str(r) for r in (report or [])], problems + [f"analisi di qualità non eseguibile: {exc}"], None
+    except Exception as exc:
+        return clean, [str(r) for r in (report or [])], [*problems, f"analisi di qualità non eseguibile: {exc}"], None
     problems += [p for p in blocking_problems(clean_quality) if p not in problems]
     return clean, [str(r) for r in (report or [])], problems, clean_quality
 
@@ -203,23 +201,28 @@ def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> Cle
     settings.charts_dir.mkdir(parents=True, exist_ok=True)
     meta_path = cache / "pulizia.json"
     raw_path, complete_path, valid_path = cache / "df_grezzo.pkl", cache / "df_completo.pkl", cache / "df.pkl"
-    key = {"csv_sha256": _sha256(settings.data_csv_path), "dizionario_sha256": _sha256(settings.data_dictionary_path)}
+    # file letti una volta: impronta e contenuto usati vengono dalla stessa lettura (una modifica nel frattempo
+    # non finisce in cache sotto l'impronta sbagliata)
+    csv_bytes = settings.data_csv_path.read_bytes()
+    dictionary_bytes = settings.data_dictionary_path.read_bytes()
+    key = {"csv_sha256": hashlib.sha256(csv_bytes).hexdigest(), "dizionario_sha256": hashlib.sha256(dictionary_bytes).hexdigest()}
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
 
-    schema = parse_dictionary(settings.data_dictionary_path.read_text(encoding="utf-8"))
+    dictionary_text = dictionary_bytes.decode("utf-8")
+    schema = parse_dictionary(dictionary_text)
 
     if not force and valid_path.exists() and all(meta.get(k) == v for k, v in key.items()):
         log.info("pulizia: riuso il risultato in cache (%s)", meta["created_at"])
         if "qualita" not in meta:  # cache creata prima dell'analisi di qualità: la si calcola una volta
-            raw = pd.read_csv(settings.data_csv_path)
-            clean = pd.read_pickle(complete_path)
+            raw = pd.read_csv(io.BytesIO(csv_bytes))
+            clean = safe_pickle.load_path(complete_path)
             raw_quality = analyze(raw, schema)
             meta["qualita"] = {"grezzo": raw_quality, "residui": residuals(raw_quality, analyze(clean, schema))}
             meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
         return CleanedData(raw_path, complete_path, valid_path, meta["report"], meta["code"], "cache", meta["stats"],
                            meta["qualita"])
 
-    raw = pd.read_csv(settings.data_csv_path)
+    raw = pd.read_csv(io.BytesIO(csv_bytes))
     with open(raw_path, "wb") as fh:
         pickle.dump(raw, fh)
     raw_quality = analyze(raw, schema)
@@ -252,7 +255,7 @@ def prepare_clean_data(settings: Settings, force: bool = False, llm=None) -> Cle
 
     llm = llm or build_llm(settings)
     profile = build_profile(raw, schema, raw_quality)
-    dizionario = settings.data_dictionary_path.read_text(encoding="utf-8")
+    dizionario = dictionary_text
     messages = [
         SystemMessage(CLEANING_SYSTEM_PROMPT),
         HumanMessage(CLEANING_TASK.format(

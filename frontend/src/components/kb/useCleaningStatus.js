@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-
 import { api } from "../../api.js";
+import { usePolling } from "../../hooks.js";
 
 const SOURCE_LABEL = {
   cache: "risultato in cache: dati e regole invariati",
@@ -10,24 +9,11 @@ const SOURCE_LABEL = {
 
 export const describeSource = (s) => SOURCE_LABEL[s] ?? s;
 
-/** Stato della pulizia, con polling mentre un aggiornamento è in corso o in coda. */
+const inProgress = (s) => Boolean(s && (s.refreshing || s.queued || s.status === "cleaning"));
+
+/** Stato della pulizia, con polling mentre un aggiornamento è in corso o in coda. `reload(ms)` lo ricarica. */
 export function useCleaningStatus() {
-  const [status, setStatus] = useState(null);
-  const timer = useRef(null);
-  const load = useCallback(async () => {
-    clearTimeout(timer.current);
-    try {
-      const s = await api.cleaning();
-      setStatus(s);
-      if (s.refreshing || s.queued || s.status === "cleaning") timer.current = setTimeout(load, 2500);
-    } catch (err) {
-      setStatus({ error: err.message });
-    }
-  }, []);
-  useEffect(() => {
-    load();
-    return () => clearTimeout(timer.current);
-  }, [load]);
-  const busy = Boolean(status && (status.refreshing || status.queued || status.status === "cleaning"));
-  return { status, busy, reload: load };
+  const { data, error, reload } = usePolling(api.cleaning, inProgress, 2500);
+  const status = error ? { ...data, error } : data;
+  return { status, busy: inProgress(data), reload };
 }

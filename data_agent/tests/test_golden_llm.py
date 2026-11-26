@@ -3,10 +3,10 @@
 Eseguili con `pytest -m llm` (richiedono OPENROUTER_API_KEY e consumano chiamate).
 """
 
+import contextlib
 import pickle
 import re
 
-import pandas as pd
 import pytest
 
 from app.agent import DataAnalyst
@@ -29,10 +29,8 @@ def _numbers(text: str) -> list[float]:
             token = token.replace(".", "").replace(",", ".")
         elif token.count(".") > 1 or re.fullmatch(r"\d{1,3}(\.\d{3})+", token):
             token = token.replace(".", "")
-        try:
+        with contextlib.suppress(ValueError):
             values.append(float(token))
-        except ValueError:
-            pass
     return values
 
 

@@ -13,7 +13,7 @@ CATALOG = {"data": [
 
 
 def _reset(monkeypatch, response):
-    monkeypatch.setattr(llm, "_catalog", {"at": 0.0, "temperature": set()})
+    monkeypatch.setattr(llm, "_catalog", {"at": 0.0, "temperature": set(), "failed_at": 0.0})
 
     def fake_urlopen(url, timeout):
         if isinstance(response, Exception):

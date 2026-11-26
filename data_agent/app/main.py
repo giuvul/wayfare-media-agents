@@ -33,8 +33,8 @@ from pydantic import BaseModel, Field, SecretStr
 from . import dataset
 from .agent import DataAnalyst
 from .cleaning import CleanedData, prepare_clean_data
+from .config import Settings, get_settings, scrub_secret_env
 from .llm import build_llm
-from .config import Settings, get_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("data_agent")
@@ -49,7 +49,8 @@ class State:
         self.status = "starting"  # starting | cleaning | ready | error
         self.refreshing = False  # pulizia in aggiornamento mentre si continua a servire la versione precedente
         self.error: str | None = None
-        self.lock = threading.Lock()
+        self.lock = threading.Lock()  # una preparazione alla volta
+        self.guard = threading.Lock()  # controllo e prenotazione di una ricostruzione, senza race
 
 
 state = State()
@@ -80,6 +81,7 @@ def _prepare(settings: Settings, force: bool = False, llm=None) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    scrub_secret_env()  # i figli della sandbox non devono ereditare chiave e token
     app.state.semaphore = asyncio.Semaphore(settings.max_concurrent_analyses)
     # La pulizia (eventualmente generata dall'LLM) gira in background: /health risponde subito.
     threading.Thread(target=_prepare, args=(settings,), daemon=True).start()
@@ -99,10 +101,10 @@ class LlmOverride(BaseModel):
     model: str | None = Field(default=None, max_length=200, pattern=r"^[A-Za-z0-9._:/~-]+$")
     api_key: SecretStr | None = Field(default=None, max_length=300)
 
-    def llm(self):
+    def llm(self, timeout_s: float | None = None):
         if not self.model and not self.api_key:
             return None
-        return build_llm(get_settings(), self.model, self.api_key.get_secret_value() if self.api_key else None)
+        return build_llm(get_settings(), self.model, self.api_key.get_secret_value() if self.api_key else None, timeout_s)
 
 
 class AnalyzeRequest(LlmOverride):
@@ -155,13 +157,14 @@ async def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
     settings = get_settings()
     log.info("analyze request_id=%s model=%s task=%r", req.request_id, req.model or "default", req.task[:200])
     analyst, data = state.analyst, state.data
+    budget = min(settings.request_timeout_s, req.timeout_s or settings.request_timeout_s)
     async with app.state.semaphore:
         try:
-            result = await asyncio.wait_for(
-                run_in_threadpool(analyst.analyze, req.task, req.llm(), req.timeout_s), timeout=settings.request_timeout_s + 15
-            )
-        except TimeoutError:
-            raise HTTPException(status_code=504, detail="Analisi troppo lunga: riprova con una domanda più specifica.")
+            llm = await run_in_threadpool(req.llm, budget)  # può leggere il catalogo dei modelli: fuori dall'event loop
+            # margine oltre il budget: l'analisi si ferma da sola entro il budget, il wait_for è solo una rete di sicurezza
+            result = await asyncio.wait_for(run_in_threadpool(analyst.analyze, req.task, llm, budget), timeout=budget + 15)
+        except TimeoutError as exc:
+            raise HTTPException(status_code=504, detail="Analisi troppo lunga: riprova con una domanda più specifica.") from exc
     return AnalyzeResponse(
         answer=result.answer, code=result.code, charts=result.charts, table=result.table,
         cleaning={"fonte": data.source, "report": data.report, **data.stats},
@@ -199,8 +202,13 @@ def cleaning() -> dict:
 @app.post("/cleaning/rebuild", status_code=202, dependencies=[Depends(require_token)])
 def rebuild(req: RebuildRequest | None = None) -> dict:
     req = req or RebuildRequest()
-    if state.status == "cleaning" or state.refreshing:
-        raise HTTPException(status_code=409, detail="Pulizia già in corso.")
+    with state.guard:  # due richieste contemporanee non possono partire entrambe
+        if state.status == "cleaning" or state.refreshing:
+            raise HTTPException(status_code=409, detail="Pulizia già in corso.")
+        if state.analyst is not None:
+            state.refreshing = True
+        else:
+            state.status = "cleaning"
     args = (get_settings(), req.mode == "regenerate", req.llm())
     threading.Thread(target=_prepare, args=args, daemon=True).start()
     return {"status": "refreshing" if state.analyst else "cleaning", "mode": req.mode}
@@ -225,9 +233,9 @@ def update_row(row_id: str, req: CellUpdate) -> dict:
     try:
         change = dataset.update_cell(get_settings().data_csv_path, row_id, req.column, req.value)
     except KeyError:
-        raise HTTPException(status_code=404, detail="Riga non trovata.")
+        raise HTTPException(status_code=404, detail="Riga non trovata.") from None
     except dataset.DatasetError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     log.info("dataset: %s.%s modificata", row_id, req.column)
     return change
 
@@ -242,6 +250,6 @@ def put_dictionary(req: DictionaryUpdate) -> dict:
     try:
         dataset.write_dictionary(get_settings().data_dictionary_path, req.content)
     except dataset.DatasetError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     log.info("dizionario dati aggiornato (%d caratteri)", len(req.content))
     return {"ok": True}

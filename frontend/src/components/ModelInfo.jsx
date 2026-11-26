@@ -11,7 +11,8 @@ const short = (model) => model.split("/").pop();
 const usd = (n) => `${n.toLocaleString("it-IT", { maximumFractionDigits: n < 0.01 ? 4 : 2 })} $`;
 
 /** Modello che ha risposto davvero (orchestratore e analista dati), con provider e costo del turno. */
-export default function ModelInfo({ generations, requested }) {
+/** `retry`: la risposta è appena arrivata e OpenRouter potrebbe non avere ancora i dettagli; le risposte salvate si chiedono una volta. */
+export default function ModelInfo({ generations, requested, retry }) {
   const ids = useMemo(() => generationIds(generations), [generations]);
   const [details, setDetails] = useState({});
   const [gaveUp, setGaveUp] = useState(false);
@@ -33,16 +34,16 @@ export default function ModelInfo({ generations, requested }) {
         if (controller.signal.aborted) return;
       }
       if (ids.some((id) => !known[id])) {
-        if (attempts < MAX_ATTEMPTS) timer = setTimeout(poll, RETRY_MS);
+        if (retry && attempts < MAX_ATTEMPTS) timer = setTimeout(poll, RETRY_MS);
         else setGaveUp(true);
       }
     };
-    timer = setTimeout(poll, 1_000);
+    timer = setTimeout(poll, retry ? 1_000 : 0);
     return () => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [ids]);
+  }, [ids, retry]);
 
   if (ids.length === 0) return null;
   const { pending, roles, costUsd } = summarizeGenerations(generations, details, requested);

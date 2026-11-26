@@ -2,60 +2,65 @@
 import express from "express";
 import { z } from "zod";
 
-import { asyncRoute } from "../errors.js";
+import { HttpError } from "../errors.js";
 import { DOC_NAME, MAX_DOC_CHARS, slugify } from "../rag/documents.js";
 
 const DocContent = z.object({ content: z.string().min(1).max(MAX_DOC_CHARS) });
 const NewDoc = z.object({ title: z.string().trim().min(3).max(120), content: z.string().min(1).max(MAX_DOC_CHARS) });
 const CellUpdate = z.object({ column: z.string().min(1).max(64), value: z.string().max(200) });
+const DataQuery = z.object({
+  view: z.enum(["raw", "clean"]).default("raw"),
+  page: z.coerce.number().int().min(1).max(100_000).default(1),
+  page_size: z.coerce.number().int().min(1).max(200).default(50),
+  q: z.string().max(100).default(""),
+});
+// un aggiornamento della pulizia già in corso (409) può durare minuti se l'AI rigenera il codice
+const REFRESH_RETRY_MS = 5_000;
+const REFRESH_MAX_ATTEMPTS = 120;
 
 export function kbRouter({ documents, indexer, dataAgent, settings, log }) {
   const router = express.Router();
   router.use(express.json({ limit: "1mb" }));
 
   const docId = (req) => {
-    if (!DOC_NAME.test(req.params.id)) {
-      const err = new Error("Nome di documento non valido.");
-      err.status = 400;
-      throw err;
-    }
+    if (!DOC_NAME.test(req.params.id)) throw new HttpError("Nome di documento non valido.");
     return req.params.id;
   };
 
   // --- Documenti -----------------------------------------------------------------------------
   router.get(
     "/kb/documents",
-    asyncRoute(async (_req, res) => {
+    async (_req, res) => {
       const [docs, counts] = await Promise.all([documents.list(), indexer.counts().catch(() => null)]);
       res.json({ documents: docs.map((d) => ({ ...d, chunks: counts ? counts[d.id] ?? 0 : null })) });
-    }),
+    },
   );
 
   router.get(
     "/kb/documents/:id",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const { sha256: _sha, ...doc } = await documents.load(docId(req));
       res.json({ ...doc, sections: doc.sections.map(({ text: _t, ...s }) => s) });
-    }),
+    },
   );
 
-  router.get("/kb/documents/:id/raw", asyncRoute(async (req, res) => res.json({ content: await documents.raw(docId(req)) })));
+  router.get("/kb/documents/:id/raw", async (req, res) => res.json({ content: await documents.raw(docId(req)) }));
 
   router.put(
     "/kb/documents/:id",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const id = docId(req);
       const parsed = DocContent.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: "Contenuto non valido." });
       await documents.write(id, parsed.data.content);
       const indexed = await indexer.indexDocument(id);
       res.json({ id, indexed });
-    }),
+    },
   );
 
   router.post(
     "/kb/documents",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const parsed = NewDoc.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: "Titolo (almeno 3 caratteri) e contenuto sono obbligatori." });
       const { title, content } = parsed.data;
@@ -64,32 +69,32 @@ export function kbRouter({ documents, indexer, dataAgent, settings, log }) {
       await documents.write(id, body, { create: true });
       const indexed = await indexer.indexDocument(id);
       res.status(201).json({ id, indexed });
-    }),
+    },
   );
 
   router.delete(
     "/kb/documents/:id",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const id = docId(req);
       await documents.remove(id);
       await indexer.removeDocument(id);
       res.status(204).end();
-    }),
+    },
   );
 
   // --- Dati (proxy verso il data agent) --------------------------------------------------------
   // Dopo ogni modifica la pulizia viene aggiornata: il data agent riusa il codice già validato se supera
   // ancora i controlli, altrimenti lo rigenera con l'LLM. Se un aggiornamento è già in corso si riprova.
   let pendingRefresh = null;
-  const refreshCleaning = (mode = "refresh") => {
+  const refreshCleaning = () => {
     if (pendingRefresh) return;
     const attempt = async (n) => {
       try {
-        await dataAgent.rebuildCleaning(mode, settings.dataAgentOverride());
+        await dataAgent.rebuildCleaning("refresh", settings.dataAgentOverride());
         pendingRefresh = null;
       } catch (err) {
-        if (err.status === 409 && n < 40) {
-          pendingRefresh = setTimeout(() => attempt(n + 1), 3000);
+        if (err.status === 409 && n < REFRESH_MAX_ATTEMPTS) {
+          pendingRefresh = setTimeout(() => attempt(n + 1), REFRESH_RETRY_MS);
         } else {
           pendingRefresh = null;
           log.error({ err: err.message }, "aggiornamento della pulizia non avviato");
@@ -99,76 +104,52 @@ export function kbRouter({ documents, indexer, dataAgent, settings, log }) {
     pendingRefresh = setTimeout(() => attempt(0), 0);
   };
 
-  const proxyError = (res, err) => {
-    if (err.status && err.status < 500) return res.status(err.status).json({ error: err.detail ?? "Richiesta non valida." });
-    throw err;
-  };
-
   router.get(
     "/kb/data",
-    asyncRoute(async (req, res) => {
-      const { view = "raw", page = 1, page_size = 50, q = "" } = req.query;
-      try {
-        res.json(await dataAgent.dataset({ view, page, page_size, q }));
-      } catch (err) {
-        proxyError(res, err);
-      }
-    }),
+    async (req, res) => {
+      const parsed = DataQuery.safeParse(req.query);
+      if (!parsed.success) throw new HttpError("Parametri non validi.");
+      res.json(await dataAgent.dataset(parsed.data));
+    },
   );
 
   router.patch(
     "/kb/data/rows/:rowId",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const parsed = CellUpdate.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: "Richiesta non valida." });
-      try {
-        const change = await dataAgent.updateCell(req.params.rowId, parsed.data.column, parsed.data.value);
-        refreshCleaning();
-        res.json(change);
-      } catch (err) {
-        proxyError(res, err);
-      }
-    }),
+      const change = await dataAgent.updateCell(req.params.rowId, parsed.data.column, parsed.data.value);
+      refreshCleaning();
+      res.json(change);
+    },
   );
 
-  router.get("/kb/dictionary", asyncRoute(async (_req, res) => res.json(await dataAgent.dictionary())));
+  router.get("/kb/dictionary", async (_req, res) => res.json(await dataAgent.dictionary()));
 
   router.put(
     "/kb/dictionary",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const parsed = DocContent.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: "Contenuto non valido." });
-      try {
-        await dataAgent.updateDictionary(parsed.data.content);
-        refreshCleaning(); // regole cambiate: il data agent rigenera la pulizia con l'LLM
-        res.json({ ok: true });
-      } catch (err) {
-        proxyError(res, err);
-      }
-    }),
+      await dataAgent.updateDictionary(parsed.data.content);
+      refreshCleaning(); // regole cambiate: il data agent rigenera la pulizia con l'LLM
+      res.json({ ok: true });
+    },
   );
 
   router.get(
     "/kb/cleaning",
-    asyncRoute(async (_req, res) => {
-      try {
-        res.json({ ...(await dataAgent.cleaning()), queued: Boolean(pendingRefresh) });
-      } catch (err) {
-        proxyError(res, err);
-      }
-    }),
+    async (_req, res) => {
+      res.json({ ...(await dataAgent.cleaning()), queued: Boolean(pendingRefresh) });
+    },
   );
 
   router.post(
     "/kb/cleaning/rebuild",
-    asyncRoute(async (req, res) => {
+    async (req, res) => {
       const mode = req.body?.mode === "regenerate" ? "regenerate" : "refresh";
-      try {
-        res.status(202).json(await dataAgent.rebuildCleaning(mode, settings.dataAgentOverride()));
-      } catch (err) {
-        proxyError(res, err);
-      }
-    }),
+      res.status(202).json(await dataAgent.rebuildCleaning(mode, settings.dataAgentOverride()));
+    },
   );
 
   return router;

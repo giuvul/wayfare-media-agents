@@ -1,0 +1,10 @@
+# Lint e ordinamento degli import del data agent: ruff check .
+target-version = "py313"
+line-length = 140
+extend-exclude = ["cache"]  # codice di pulizia generato dall'AI
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+ignore = [
+  "RUF001", "RUF002", "RUF003",  # caratteri tipografici italiani (’ – ×) nei testi e nei commenti
+]

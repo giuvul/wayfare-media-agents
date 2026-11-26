@@ -3,8 +3,7 @@ import { test } from "node:test";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 
-import { isWithin, remarkCitations, splitCitations, splitDocumentBlocks } from "../src/citations.js";
-import { groupByDay } from "../src/format.js";
+import { citedSources, isWithin, remarkCitations, splitCitations, splitDocumentBlocks } from "../src/citations.js";
 
 const links = (nodes) => nodes.filter((n) => n.type === "link").map((n) => n.url);
 
@@ -33,13 +32,18 @@ test("blocchi del documento ed evidenziazione delle sottosezioni", () => {
   assert.ok(isWithin("1.1", "1") && isWithin("1", "1") && !isWithin("11", "1") && !isWithin("1", null));
 });
 
-test("cronologia raggruppata per giorno", () => {
-  const now = new Date("2026-11-25T15:00:00");
-  const groups = groupByDay([
-    { id: "a", updatedAt: "2026-11-25T09:00:00" },
-    { id: "b", updatedAt: "2026-11-24T20:00:00" },
-    { id: "c", updatedAt: "2026-11-20T10:00:00" },
-    { id: "d", updatedAt: "2026-10-01T10:00:00" },
-  ], now);
-  assert.deepEqual(groups.map((g) => [g.label, g.items.map((i) => i.id)]), [["Oggi", ["a"]], ["Ieri", ["b"]], ["Ultimi 7 giorni", ["c"]], ["Precedenti", ["d"]]]);
+test("fonti di una risposta: solo le sezioni citate, ognuna col documento da cui è stata recuperata", () => {
+  const steps = [
+    { tool: "cerca_documentazione", artifact: { sources: [
+      { source: "handbook", section: "4.3", similarity: 0.8 },
+      { source: "policy", section: "4.3", similarity: 0.9 },
+      { source: "handbook", section: "5.1", similarity: 0.7 },
+    ] } },
+    { tool: "analizza_dati", artifact: {} },
+  ];
+  const { sources, sourceOf } = citedSources("La penale è del 50% [§4.3].", steps);
+  assert.deepEqual(sources.map((s) => s.section), ["4.3", "4.3"]);
+  assert.equal(sourceOf("4.3"), "policy"); // vince il passaggio più simile
+  assert.equal(sourceOf("9.9"), "handbook"); // sezione sconosciuta: il primo documento recuperato
+  assert.equal(citedSources("Nessuna citazione.", steps).sources.length, 3); // senza citazioni: tutte le fonti
 });

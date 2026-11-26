@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../api.js";
 import { formatContext, formatPrice } from "../format.js";
+import { useCatalogSearch } from "../hooks.js";
 import EmbeddingCard from "./EmbeddingCard.jsx";
 import { IconAlert, IconCheck, IconSearch } from "./Icons.jsx";
+import ModelRow from "./ModelRow.jsx";
 
 function ApiKeyCard({ settings, onSaved }) {
   const [key, setKey] = useState("");
@@ -19,7 +21,7 @@ function ApiKeyCard({ settings, onSaved }) {
       setState({ error: err.message });
     }
   };
-  const credit = k.info?.limit != null ? `$${k.info.usage.toFixed(2)} usati su $${k.info.limit}` : k.info ? `$${(k.info.usage ?? 0).toFixed(2)} usati` : null;
+  const credit = k.info?.limit != null ? `$${(k.info.usage ?? 0).toFixed(2)} usati su $${k.info.limit}` : k.info ? `$${(k.info.usage ?? 0).toFixed(2)} usati` : null;
   return (
     <section className="card pad stack">
       <h2 className="card-title">Chiave API OpenRouter</h2>
@@ -54,19 +56,9 @@ function ApiKeyCard({ settings, onSaved }) {
 
 function ModelCard({ settings, onSaved }) {
   const [q, setQ] = useState("");
-  const [result, setResult] = useState(null);
+  const { result, error: searchError } = useCatalogSearch(api.models, q);
   const [state, setState] = useState({});
-  const timer = useRef(null);
   const current = settings.model;
-
-  useEffect(() => {
-    clearTimeout(timer.current);
-    const ctrl = new AbortController();
-    timer.current = setTimeout(() => {
-      api.models(q.trim(), ctrl.signal).then(setResult).catch((err) => err.name !== "AbortError" && setState({ error: err.message }));
-    }, 250);
-    return () => { clearTimeout(timer.current); ctrl.abort(); };
-  }, [q]);
 
   const choose = async (body, message) => {
     setState({ saving: true });
@@ -95,22 +87,12 @@ function ModelCard({ settings, onSaved }) {
         Catalogo in tempo reale da OpenRouter{result ? ` (${result.total} modelli)` : ""}: sono elencati solo i modelli con
         tool calling, necessario all'agente. Prezzi in dollari per milione di token (input / output).
       </p>
+      {searchError && <p className="notice notice-error">{searchError}</p>}
       <ul className="model-list">
         {result?.models.map((m) => (
-          <li key={m.id} className={m.id === current.id ? "is-current" : ""}>
-            <div className="model-info">
-              <strong>{m.name}</strong>
-              <code>{m.id}</code>
-            </div>
-            <span className="model-meta">{formatPrice(m.promptPrice)} / {formatPrice(m.completionPrice)}</span>
-            <span className="model-meta">{formatContext(m.contextLength)} contesto</span>
-            {m.id === current.id ? (
-              <span className="badge badge-ok">In uso</span>
-            ) : (
-              <button type="button" className="btn btn-ghost btn-sm" disabled={state.saving}
-                onClick={() => choose({ model: m.id }, `Da ora l'agente usa ${m.name}.`)}>Usa</button>
-            )}
-          </li>
+          <ModelRow key={m.id} name={m.name} id={m.id} inUse={m.id === current.id} disabled={state.saving}
+            meta={[`${formatPrice(m.promptPrice)} / ${formatPrice(m.completionPrice)}`, `${formatContext(m.contextLength)} contesto`]}
+            onUse={() => choose({ model: m.id }, `Da ora l'agente usa ${m.name}.`)} />
         ))}
         {result?.models.length === 0 && <li className="muted">Nessun modello trovato.</li>}
       </ul>

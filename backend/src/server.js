@@ -37,8 +37,10 @@ const getAgent = createAgentProvider({
   checkpointer,
 });
 
+const shutdown = new AbortController();
 const app = createApp({
   config, log, getAgent, checkpointer, dataAgent, retriever, conversations, settings, documents, indexer, embeddings, embeddingSwitcher,
+  shutdownSignal: shutdown.signal,
   generations: createGenerationService({ config, settings }),
 });
 const server = app.listen(config.BACKEND_PORT, config.BACKEND_HOST, () => {
@@ -48,11 +50,11 @@ const server = app.listen(config.BACKEND_PORT, config.BACKEND_HOST, () => {
     embeddings.getEmbeddings().load().catch((err) => log.error({ err: err.message }, "caricamento del modello di embedding locale fallito"));
   }
 });
-server.requestTimeout = config.CHAT_TIMEOUT_MS + 15_000;
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
     log.info({ signal }, "arresto in corso");
+    shutdown.abort(); // i turni in corso terminano subito e vengono salvati come interrotti
     server.close(() => {
       db.close();
       process.exit(0);

@@ -9,6 +9,3 @@ numpy
 matplotlib
 seaborn
 tabulate
-# test
-pytest
-httpx

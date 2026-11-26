@@ -28,10 +28,14 @@ test("restituisce modello, provider e costo, con la chiave del server", async ()
   assert.equal(calls[0].auth, "Bearer sk-test");
 });
 
-test("una generazione non ancora disponibile torna null e viene richiesta di nuovo; poi resta in cache", async () => {
+test("una generazione non ancora disponibile torna null e viene richiesta di nuovo dopo qualche secondo; poi resta in cache", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"] });
   const { calls, fetchImpl } = fakeOpenRouter({ readyAfter: 1 });
   const service = createGenerationService({ config, settings, fetchImpl });
   assert.equal((await service.lookup(["gen-1-a"]))["gen-1-a"], null);
+  assert.equal((await service.lookup(["gen-1-a"]))["gen-1-a"], null); // subito dopo: nessuna nuova richiesta
+  assert.equal(calls.length, 1);
+  t.mock.timers.tick(5_000);
   assert.equal((await service.lookup(["gen-1-a"]))["gen-1-a"].model, DATA.model);
   await service.lookup(["gen-1-a"]);
   assert.equal(calls.length, 2);

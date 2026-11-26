@@ -41,7 +41,6 @@ export default function ChatView({ thread, title, busy, onSend, onStop, onOpenDo
       <main
         className="conversation"
         ref={scrollRef}
-        aria-live="polite"
         onScroll={(e) => {
           const el = e.currentTarget;
           stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
@@ -54,7 +53,9 @@ export default function ChatView({ thread, title, busy, onSend, onStop, onOpenDo
           <Message key={m.id} message={m} onOpenDoc={onOpenDoc} />
         ))}
       </main>
-      <Composer busy={busy} onSend={(t) => { stick.current = true; onSend(t); }} onStop={onStop} />
+      {/* per i lettori di schermo: solo l'inizio e la fine della risposta, non ogni frammento dello streaming */}
+      <p className="sr-only" aria-live="polite">{busy ? "Risposta in corso…" : messages.at(-1)?.status === "done" ? "Risposta completata." : ""}</p>
+      <Composer busy={busy} disabled={Boolean(thread?.loading)} onSend={(t) => { stick.current = true; onSend(t); }} onStop={onStop} />
     </div>
   );
 }

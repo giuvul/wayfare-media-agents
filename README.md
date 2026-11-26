@@ -76,7 +76,7 @@ Tutte le dipendenze sono fissate a versioni esatte (`save-exact` per npm, `requi
 Prerequisiti: Docker con Compose v2 e una chiave [OpenRouter](https://openrouter.ai/keys).
 
 ```bash
-cp .env.example .env            # inserisci OPENROUTER_API_KEY e un DATA_AGENT_TOKEN casuale (openssl rand -hex 32)
+cp .env.example .env            # inserisci una API key di OpenRouter e un DATA_AGENT_TOKEN casuale (openssl rand -hex 32)
 docker compose up -d --build
 docker compose ps               # attendi che backend risulti "healthy"
 # apri http://localhost:8080
@@ -138,11 +138,15 @@ Note:
 ## Test
 
 ```bash
-cd backend && npm test          # orchestratore (modello finto), API, RAG, persistenza, embedding
-cd frontend && npm test         # parser SSE, citazioni, formattazione
-cd data_agent && .venv/bin/pytest            # sandbox, analisi della qualità, validatori, API
-cd data_agent && .venv/bin/pytest -m llm     # opzionale: chiama davvero il modello e confronta con il ground truth
+(cd backend && npm test)        # orchestratore (modello finto), API, RAG, persistenza, embedding
+(cd frontend && npm test)       # parser SSE, citazioni, formattazione
+(cd data_agent && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pytest)   # sandbox, qualità, API
+(cd data_agent && .venv/bin/pytest -m llm)    # opzionale: chiama davvero il modello e confronta con il ground truth
 ```
+
+Lint: `npm run lint` in `backend/` e `frontend/` (ESLint, con le regole degli hook di React nel front end) e
+`.venv/bin/ruff check .` in `data_agent/`. Gli strumenti di test e lint del data agent sono in
+`requirements-dev.txt` e non entrano nell'immagine Docker.
 
 I test predefiniti non usano la rete né consumano crediti: il back end usa un modello finto deterministico
 (`backend/test/fakeModel.js`) che simula anche lo streaming. Il dataset ha un ground truth
@@ -179,5 +183,8 @@ risultati e problemi emersi in [eval/README.md](eval/README.md).
   categorie scritte in modi diversi, valori mancanti o impossibili.
 - `data/dizionario_dati.md`: tipi, valori ammessi e regole di qualità e di calcolo. È la fonte delle regole
   per l'analisi della qualità e per la pulizia, ed è modificabile dall'interfaccia.
-- `data/kb/`: documentazione indicizzata (Markdown). `docs/wayfare_media_handbook.pdf` ne è l'esportazione.
+- `data/kb/`: documentazione indicizzata. Sono supportati Markdown, testo (`.txt`) e PDF (testo estratto con
+  `unpdf`, citazioni con il numero di pagina). Dall'interfaccia si creano e modificano documenti Markdown; file
+  `.txt` o `.pdf` si aggiungono copiandoli in `data/kb/` e rieseguendo `npm run ingest`.
+  `docs/wayfare_media_handbook.pdf` è l'esportazione dell'handbook e si può usare per provare l'indicizzazione di un PDF.
 - `data/generator/`: generatore riproducibile (seed fisso) del dataset e del PDF, con il ground truth.

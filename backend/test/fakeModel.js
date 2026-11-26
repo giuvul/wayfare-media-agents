@@ -8,6 +8,7 @@ export class ScriptedChatModel extends BaseChatModel {
     super({});
     this.responses = responses;
     this.calls = 0;
+    this.received = [];
   }
   _llmType() {
     return "scripted";
@@ -16,7 +17,8 @@ export class ScriptedChatModel extends BaseChatModel {
     return this;
   }
   /** Come un provider reale: prima il testo a pezzi, poi i frammenti della chiamata allo strumento. */
-  async *_streamResponseChunks(_messages, _options, runManager) {
+  async *_streamResponseChunks(messages, _options, runManager) {
+    this.received.push(messages); // per i test: la cronologia che il modello ha ricevuto a ogni chiamata
     const next = this.responses[this.calls++];
     if (next instanceof Error) throw next;
     const { content = "", tool_calls: calls = [] } = typeof next === "string" ? { content: next } : next;
@@ -37,7 +39,8 @@ export class ScriptedChatModel extends BaseChatModel {
     }
   }
 
-  async _generate() {
+  async _generate(messages) {
+    this.received.push(messages);
     const next = this.responses[this.calls++];
     if (next instanceof Error) throw next;
     const message = typeof next === "string" ? new AIMessage(next) : new AIMessage(next);

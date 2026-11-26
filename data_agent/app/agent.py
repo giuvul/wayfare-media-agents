@@ -9,9 +9,7 @@ con `create_agent` di LangChain 1.x e un interprete isolato (`sandbox.Sandbox`):
 
 from __future__ import annotations
 
-import io
 import logging
-import pickle
 import time
 from dataclasses import dataclass, field
 
@@ -21,6 +19,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.tools import StructuredTool
 from langgraph.errors import GraphRecursionError
 
+from . import safe_pickle
 from .cleaning import CleanedData
 from .config import Settings
 from .llm import build_llm
@@ -144,12 +143,9 @@ class DataAnalyst:
     def __init__(self, settings: Settings, data: CleanedData):
         self.settings = settings
         self.data = data
-        with open(data.valid_path, "rb") as fh:
-            df = pickle.load(fh)
-        buffer = io.StringIO()
-        buffer.write(df.head(3).to_string())
+        df = safe_pickle.load_path(data.valid_path)
         self._system_prompt = SYSTEM_PROMPT.format(
-            righe_valide=len(df), schema=_schema(df), head=buffer.getvalue(),
+            righe_valide=len(df), schema=_schema(df), head=df.head(3).to_string(),
             data_estrazione=df["data"].max().strftime("%Y-%m-%d"), max_passi=settings.max_agent_steps,
         )
         self._llm = build_llm(settings)
@@ -171,7 +167,7 @@ class DataAnalyst:
                 if time.monotonic() > deadline:
                     return "Tempo a disposizione esaurito: non eseguire altro codice e scrivi la risposta finale."
                 result.code.append(codice)
-                out = box.run(codice)
+                out = box.run(codice, timeout_s=deadline - time.monotonic())  # mai oltre il tempo rimasto
                 result.charts.extend(out.charts)
                 if not out.ok:
                     return f"ERRORE\n{out.error}"
@@ -219,8 +215,12 @@ class DataAnalyst:
             result.generations = list(dict.fromkeys(result.generations))  # final può essere già in messages
             result.answer = _text(final) if final else ""
             if not result.answer and not result.error:
-                result.error = (f"Analisi interrotta dopo {self.settings.max_agent_steps} passi senza una conclusione."
-                                if exhausted else "L'agente non ha prodotto una risposta finale.")
+                if not exhausted:
+                    result.error = "L'agente non ha prodotto una risposta finale."
+                elif time.monotonic() > deadline:
+                    result.error = "Tempo a disposizione esaurito prima di una conclusione."
+                else:
+                    result.error = f"Analisi interrotta dopo {self.settings.max_agent_steps} passi senza una conclusione."
             result.table = box.table("risultato")
 
         result.duration_ms = int((time.monotonic() - started) * 1000)

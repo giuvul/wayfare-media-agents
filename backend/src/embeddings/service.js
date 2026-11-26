@@ -11,6 +11,7 @@ import { toModel } from "../settings.js";
 import { downloadSizeMb, findLocalModel, LOCAL_MODELS } from "./catalog.js";
 import { downloadModel, isDownloaded, LocalEmbeddings } from "./local.js";
 import { assessModel, machineInfo } from "./system.js";
+import { HttpError } from "../errors.js";
 
 const STORE_KEY = "embedding";
 const THRESHOLD_KEY = (key) => `embedding_threshold:${key}`;
@@ -36,12 +37,7 @@ export function calibrateThreshold(offTopicTop) {
 }
 const REMOTE_TTL_MS = 60 * 60 * 1000;
 
-export class EmbeddingError extends Error {
-  constructor(message, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
+export class EmbeddingError extends HttpError {}
 
 /** Nome della collection: quello del .env per il modello di default (compatibilità), suffissato per gli altri. */
 export function collectionName(base, defaults, { provider, model }) {
@@ -158,6 +154,7 @@ export function createEmbeddingService({ config, store, getApiKey, log, fetchImp
 /** Cambio del modello di embedding: un'operazione alla volta, stato interrogabile dall'interfaccia. */
 export function createEmbeddingSwitcher({ service, indexer, retriever, log }) {
   let state = { status: "idle" };
+  let starting = false;
   const set = (patch) => {
     state = { ...state, ...patch };
   };
@@ -202,24 +199,30 @@ export function createEmbeddingSwitcher({ service, indexer, retriever, log }) {
   return {
     state: () => state,
     async start({ provider, model }) {
-      if (state.status === "running") throw new EmbeddingError("Un cambio di modello è già in corso.", 409);
-      const active = service.current();
-      if (active.provider === provider && active.model === model) throw new EmbeddingError("Questo modello è già in uso.");
-      if (provider === "local") {
-        const m = findLocalModel(model);
-        if (!m) throw new EmbeddingError("Modello locale non presente nel catalogo.");
-        const { verdict, reasons } = service.localCatalog().models.find((x) => x.id === model).assessment;
-        if (verdict === "insufficiente" || verdict === "non_supportato") throw new EmbeddingError(`Questa macchina non può eseguire il modello: ${reasons[0]}`);
-      } else if (!(await service.listRemote()).some((m) => m.id === model)) {
-        throw new EmbeddingError("Modello di embedding non trovato su OpenRouter.");
+      if (state.status === "running" || starting) throw new EmbeddingError("Un cambio di modello è già in corso.", 409);
+      starting = true; // prenotato prima di qualunque await: un doppio clic non avvia due cambi
+      try {
+        const active = service.current();
+        if (active.provider === provider && active.model === model) throw new EmbeddingError("Questo modello è già in uso.");
+        if (provider === "local") {
+          const m = findLocalModel(model);
+          if (!m) throw new EmbeddingError("Modello locale non presente nel catalogo.");
+          const { verdict, reasons } = service.localCatalog().models.find((x) => x.id === model).assessment;
+          if (verdict === "insufficiente" || verdict === "non_supportato") throw new EmbeddingError(`Questa macchina non può eseguire il modello: ${reasons[0]}`);
+        } else if (!(await service.listRemote()).some((m) => m.id === model)) {
+          throw new EmbeddingError("Modello di embedding non trovato su OpenRouter.");
+        }
+        const target = service.target({ provider, model });
+        state = { status: "running", phase: "preparazione", progress: null, target, startedAt: new Date().toISOString() };
+        run(target).catch(async (err) => {
+          log.error({ err: err.message, embedding: target.key }, "cambio del modello di embedding non riuscito");
+          await service.releaseUnused().catch(() => {}); // un modello locale caricato per il cambio libera la memoria
+          set({ status: "error", phase: null, progress: null, error: `Cambio non riuscito: ${err.message}. Resta in uso il modello precedente.` });
+        });
+        return state;
+      } finally {
+        starting = false;
       }
-      const target = service.target({ provider, model });
-      state = { status: "running", phase: "preparazione", progress: null, target, startedAt: new Date().toISOString() };
-      run(target).catch((err) => {
-        log.error({ err: err.message, embedding: target.key }, "cambio del modello di embedding non riuscito");
-        set({ status: "error", phase: null, progress: null, error: `Cambio non riuscito: ${err.message}. Resta in uso il modello precedente.` });
-      });
-      return state;
     },
   };
 }

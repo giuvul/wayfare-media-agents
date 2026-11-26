@@ -54,3 +54,18 @@ export function splitDocumentBlocks(content, sections) {
 }
 
 export const isWithin = (sectionId, target) => Boolean(target) && (sectionId === target || sectionId.startsWith(`${target}.`));
+
+/**
+ * Fonti di una risposta: le sezioni recuperate dalla ricerca e citate nel testo (tutte, se il modello non ha citato),
+ * più la funzione che associa una sezione citata al documento da cui è stata recuperata.
+ */
+export function citedSources(text, steps) {
+  const retrieved = steps.flatMap((s) => (s.tool === "cerca_documentazione" ? s.artifact?.sources ?? [] : []));
+  const bySection = new Map();
+  for (const s of [...retrieved].sort((a, b) => a.similarity - b.similarity)) bySection.set(s.section, s.source);
+  const cited = new Set([...text.matchAll(ID)].map((m) => m[1]));
+  return {
+    sources: cited.size ? retrieved.filter((s) => cited.has(s.section)) : retrieved,
+    sourceOf: (section) => bySection.get(section) ?? retrieved[0]?.source ?? null,
+  };
+}
